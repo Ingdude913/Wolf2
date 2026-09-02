@@ -11,7 +11,6 @@ import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.gui.MapSelectorGUI;
 import com.werewolf.game.util.MessageUtil;
-import com.werewolf.game.util.MessageUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

@@ -1,20 +1,38 @@
 package com.werewolf.game.util;
 
 import com.werewolf.game.WerewolfPlugin;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MessageUtil {
 
     private final WerewolfPlugin plugin;
+    private File messageFile;
+    private FileConfiguration messageConfig;
 
     public MessageUtil(WerewolfPlugin plugin) {
         this.plugin = plugin;
+        loadMessageFile();
+    }
+
+    private void loadMessageFile() {
+        messageFile = new File(plugin.getDataFolder(), "message.yml");
+        if (!messageFile.exists()) {
+            plugin.saveResource("message.yml", false);
+        }
+        messageConfig = YamlConfiguration.loadConfiguration(messageFile);
+    }
+
+    public void reload() {
+        loadMessageFile();
     }
 
     public String get(String path, Map<String, String> placeholders) {
-        String message = plugin.getConfig().getString("messages." + path, "");
+        String message = messageConfig.getString(path, "");
         if (placeholders != null) {
             for (Map.Entry<String, String> entry : placeholders.entrySet()) {
                 message = message.replace("{" + entry.getKey() + "}", entry.getValue());
@@ -28,7 +46,7 @@ public class MessageUtil {
     }
 
     public String raw(String path, Map<String, String> placeholders) {
-        String message = plugin.getConfig().getString("messages." + path, "");
+        String message = messageConfig.getString(path, "");
         if (placeholders != null) {
             for (Map.Entry<String, String> entry : placeholders.entrySet()) {
                 message = message.replace("{" + entry.getKey() + "}", entry.getValue());

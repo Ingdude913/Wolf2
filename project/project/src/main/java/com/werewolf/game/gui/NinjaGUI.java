@@ -1,7 +1,6 @@
 package com.werewolf.game.gui;
 
 import com.werewolf.game.WerewolfPlugin;
-import com.werewolf.game.util.ColorUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
