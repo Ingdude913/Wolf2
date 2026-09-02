@@ -56,6 +56,10 @@ public abstract class Role {
         return false;
     }
 
+    public boolean isCupid() {
+        return false;
+    }
+
     public boolean canSeeWerewolves() {
         return false;
     }

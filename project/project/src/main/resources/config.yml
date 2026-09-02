@@ -39,6 +39,7 @@ role-weights:
   ninja: 1
   mermaid: 1
   masochist: 1
+  cupid: 1
 
 # Items
 items:
@@ -110,3 +111,7 @@ items:
     material: NAUTILUS_SHELL
     name: "&b&lConch Shell &7(Right-click to sing and freeze werewolves)"
     slot: 1
+  cupid-bow:
+    material: BOW
+    name: "&d&lBow of Love &7(Right-click a player to select as spouse)"
+    slot: 2

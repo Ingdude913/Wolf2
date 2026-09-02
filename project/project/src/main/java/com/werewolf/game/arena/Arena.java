@@ -49,6 +49,8 @@ public class Arena {
     private final Map<UUID, Integer> voteCounts = new HashMap<>();
     private final Map<UUID, UUID> hunterTargets = new HashMap<>();
     private final Map<String, Long> abilityCooldowns = new HashMap<>();
+    private final Map<UUID, UUID> spouses = new HashMap<>();
+    private UUID cupidId = null;
 
     private int transformCooldown;
     private int ninjaCooldown;
@@ -491,8 +493,9 @@ public class Arena {
         int ninjaCount = roleSelection.getOrDefault("ninja", 0);
         int mermaidCount = roleSelection.getOrDefault("mermaid", 0);
         int masochistCount = roleSelection.getOrDefault("masochist", 0);
+        int cupidCount = roleSelection.getOrDefault("cupid", 0);
 
-        int selectedTotal = werewolfCount + villagerCount + witchCount + seerCount + hunterCount + tricksterCount + ninjaCount + mermaidCount + masochistCount;
+        int selectedTotal = werewolfCount + villagerCount + witchCount + seerCount + hunterCount + tricksterCount + ninjaCount + mermaidCount + masochistCount + cupidCount;
         if (selectedTotal > total) {
             int overflow = selectedTotal - total;
             if (masochistCount >= overflow) { masochistCount -= overflow; overflow = 0; } else { overflow -= masochistCount; masochistCount = 0; }
@@ -504,6 +507,7 @@ public class Arena {
             if (overflow > 0 && witchCount >= overflow) { witchCount -= overflow; overflow = 0; } else { overflow -= witchCount; witchCount = 0; }
             if (overflow > 0 && villagerCount >= overflow) { villagerCount -= overflow; overflow = 0; } else { overflow -= villagerCount; villagerCount = 0; }
             if (overflow > 0 && werewolfCount >= overflow) { werewolfCount -= overflow; overflow = 0; } else { overflow -= werewolfCount; werewolfCount = 0; }
+            if (overflow > 0 && cupidCount >= overflow) { cupidCount -= overflow; overflow = 0; } else { overflow -= cupidCount; cupidCount = 0; }
         }
 
         if (!debugMode) {
@@ -536,6 +540,9 @@ public class Arena {
         for (int i = 0; i < masochistCount && index < total; i++) {
             playerList.get(index++).setRole(new MasochistRole());
         }
+        for (int i = 0; i < cupidCount && index < total; i++) {
+            playerList.get(index++).setRole(new CupidRole());
+        }
         while (index < total) {
             playerList.get(index++).setRole(new VillagerRole());
         }
@@ -550,6 +557,12 @@ public class Arena {
             if (gp.getRole().canSeeWerewolves()) {
                 Player p = gp.getPlayer();
                 p.sendMessage(plugin.prefix() + ChatColor.RED + "Werewolves (your team): " + ChatColor.WHITE + String.join(", ", werewolfNames));
+            }
+        }
+
+        for (GamePlayer gp : players) {
+            if (gp.getRole().isCupid()) {
+                cupidId = gp.getPlayer().getUniqueId();
             }
         }
     }
@@ -845,6 +858,60 @@ public class Arena {
                 broadcast(ChatColor.GOLD + "The Hunter " + p.getName() + " had selected " + target.getName() + " as their target!");
             }
         }
+
+        UUID partnerId = spouses.get(p.getUniqueId());
+        if (partnerId != null) {
+            Player partner = Bukkit.getPlayer(partnerId);
+            if (partner != null) {
+                GamePlayer partnerGp = getGamePlayer(partner);
+                if (partnerGp != null && partnerGp.isAlive()) {
+                    broadcast(ChatColor.LIGHT_PURPLE + p.getName() + " and " + partner.getName() + " were spouses! " + partner.getName() + " dies of a broken heart!");
+                    eliminatePlayer(partnerGp, "died of a broken heart");
+                }
+            }
+            spouses.remove(partnerId);
+            spouses.remove(p.getUniqueId());
+        }
+    }
+
+    public void cupidSelectSpouse(Player cupid, Player target) {
+        GamePlayer cupidGp = getGamePlayer(cupid);
+        GamePlayer targetGp = getGamePlayer(target);
+        if (cupidGp == null || targetGp == null) return;
+        CupidRole cupidRole = cupidGp.asCupid();
+        if (cupidRole == null) return;
+        if (cupidRole.hasPaired()) {
+            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You have already paired two spouses!");
+            return;
+        }
+        if (!targetGp.isAlive()) {
+            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You cannot select a dead player as a spouse!");
+            return;
+        }
+        if (cupidRole.getSpouse1() == null) {
+            cupidRole.setSpouse1(target);
+            cupid.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You selected " + target.getName() + " as the first spouse. Select one more player to complete the pair.");
+            return;
+        }
+        if (cupidRole.getSpouse2() != null) {
+            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You have already paired two spouses!");
+            return;
+        }
+        Player first = cupidRole.getSpouse1();
+        if (target.getUniqueId().equals(first.getUniqueId())) {
+            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You already selected that player as the first spouse!");
+            return;
+        }
+        cupidRole.setSpouse2(target);
+        cupidRole.setPaired(true);
+        spouses.put(first.getUniqueId(), target.getUniqueId());
+        spouses.put(target.getUniqueId(), first.getUniqueId());
+        cupid.getInventory().removeItem(ItemBuilder.create(plugin, "cupid-bow"));
+        broadcast(ChatColor.LIGHT_PURPLE + "===== CUPID'S ARROW =====");
+        broadcast(ChatColor.LIGHT_PURPLE + first.getName() + " and " + target.getName() + " are now spouses! They must stay alive together to win!");
+        first.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You are now spouses with " + target.getName() + "! If one of you dies, the other dies too. Stay alive together to win!");
+        target.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You are now spouses with " + first.getName() + "! If one of you dies, the other dies too. Stay alive together to win!");
+        cupid.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You have paired " + first.getName() + " and " + target.getName() + " as spouses!");
     }
 
     public void werewolfKill(Player killer, Player target) {
@@ -991,12 +1058,36 @@ public class Arena {
             return true;
         }
         if (!badAlive) {
+            if (areSpousesAlive()) {
+                endGame("Spouses", "All werewolves have been eliminated and the spouses are both alive!");
+                return true;
+            }
             endGame("Good team", "All werewolves have been eliminated!");
             return true;
         }
         if (!goodAlive) {
+            if (areSpousesAlive()) {
+                endGame("Spouses", "All villagers have been eliminated and the spouses are both alive!");
+                return true;
+            }
             endGame("Bad team", "All villagers have been eliminated!");
             return true;
+        }
+        return false;
+    }
+
+    private boolean areSpousesAlive() {
+        if (spouses.isEmpty()) return false;
+        for (Map.Entry<UUID, UUID> entry : spouses.entrySet()) {
+            Player p1 = Bukkit.getPlayer(entry.getKey());
+            Player p2 = Bukkit.getPlayer(entry.getValue());
+            if (p1 != null && p2 != null) {
+                GamePlayer gp1 = getGamePlayer(p1);
+                GamePlayer gp2 = getGamePlayer(p2);
+                if (gp1 != null && gp2 != null && gp1.isAlive() && gp2.isAlive()) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -1041,6 +1132,8 @@ public class Arena {
         fakeVoteCounts.clear();
         sheriffId = null;
         mermaidFreezeUntil = 0;
+        spouses.clear();
+        cupidId = null;
         phase = Phase.LOBBY;
         scoreboardHelper.setupLobby();
     }
@@ -1085,6 +1178,8 @@ public class Arena {
         fakeVoteCounts.clear();
         sheriffId = null;
         mermaidFreezeUntil = 0;
+        spouses.clear();
+        cupidId = null;
         phase = Phase.LOBBY;
         scoreboardHelper.setupLobby();
         broadcast(ChatColor.RED + "The game has been force stopped.");
@@ -1185,6 +1280,9 @@ public class Arena {
                 break;
             case "masochist":
                 role = new MasochistRole();
+                break;
+            case "cupid":
+                role = new CupidRole();
                 break;
             default:
                 return;

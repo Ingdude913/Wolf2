@@ -106,6 +106,11 @@ public class GamePlayer {
         return null;
     }
 
+    public CupidRole asCupid() {
+        if (role instanceof CupidRole) return (CupidRole) role;
+        return null;
+    }
+
     public boolean isSheriff() {
         return isSheriff;
     }

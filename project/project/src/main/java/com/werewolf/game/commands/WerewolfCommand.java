@@ -357,7 +357,7 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(plugin.prefix() + ChatColor.RED + "Debug mode must be enabled for that arena first! Use /ww debug <arena>");
             return;
         }
-        List<String> validRoles = Arrays.asList("werewolf", "villager", "witch", "seer", "hunter", "trickster", "ninja", "mermaid", "masochist");
+        List<String> validRoles = Arrays.asList("werewolf", "villager", "witch", "seer", "hunter", "trickster", "ninja", "mermaid", "masochist", "cupid");
         if (!validRoles.contains(roleName.toLowerCase())) {
             sender.sendMessage(plugin.prefix() + ChatColor.RED + "Invalid role! Valid roles: " + String.join(", ", validRoles));
             return;
@@ -516,6 +516,7 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
                 completions.add("ninja");
                 completions.add("mermaid");
                 completions.add("masochist");
+                completions.add("cupid");
             }
         }
         return completions;

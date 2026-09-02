@@ -95,6 +95,10 @@ public class PlayerDamageListener implements Listener {
             }
             if (ItemBuilder.isItemKey(plugin, attacker.getInventory().getItemInMainHand(), "hunter-target")) {
                 arena.hunterSelectTarget(attacker, target);
+                return;
+            }
+            if (ItemBuilder.isItemKey(plugin, attacker.getInventory().getItemInMainHand(), "cupid-bow")) {
+                arena.cupidSelectSpouse(attacker, target);
             }
         }
     }

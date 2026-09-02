@@ -150,6 +150,14 @@ public class PlayerInteractListener implements Listener {
                 }
                 return;
             }
+
+            if (ItemBuilder.isItemKey(plugin, event.getItem(), "cupid-bow")) {
+                event.setCancelled(true);
+                if (arena.getPhase() == Phase.NIGHT) {
+                    player.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "Right-click a player to select them as a spouse.");
+                }
+                return;
+            }
         }
     }
 }

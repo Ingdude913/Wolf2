@@ -30,6 +30,7 @@ public class RoleSelectorGUI {
     public static final String ROLE_NINJA = "ninja";
     public static final String ROLE_MERMAID = "mermaid";
     public static final String ROLE_MASOCHIST = "masochist";
+    public static final String ROLE_CUPID = "cupid";
 
     public static void open(Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
         sheriffEnabledMap.put(player, sheriffEnabled);
@@ -59,6 +60,7 @@ public class RoleSelectorGUI {
         slot = addRole(inv, slotMap, slot, Material.ENDER_EYE, ROLE_NINJA, ChatColor.DARK_PURPLE + "Ninja", currentSelection.getOrDefault(ROLE_NINJA, 0));
         slot = addRole(inv, slotMap, slot, Material.NAUTILUS_SHELL, ROLE_MERMAID, ChatColor.AQUA + "Mermaid", currentSelection.getOrDefault(ROLE_MERMAID, 0));
         slot = addRole(inv, slotMap, slot, Material.CACTUS, ROLE_MASOCHIST, ChatColor.DARK_GREEN + "Masochist", currentSelection.getOrDefault(ROLE_MASOCHIST, 0));
+        slot = addRole(inv, slotMap, slot, Material.BOW, ROLE_CUPID, ChatColor.LIGHT_PURPLE + "Cupid", currentSelection.getOrDefault(ROLE_CUPID, 0));
 
         boolean sheriffEnabled = sheriffEnabledMap.getOrDefault(player, true);
         ItemStack sheriffToggle = new ItemStack(sheriffEnabled ? Material.EMERALD : Material.REDSTONE);
