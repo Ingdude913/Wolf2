@@ -175,47 +175,61 @@ public class Arena {
     }
 
     public void addPlayer(Player player) {
-        if (phase != Phase.LOBBY) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "This game has already started!");
-            return;
-        }
         if (isPlayerInArena(player)) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You are already in this arena!");
+            player.sendMessage(plugin.prefix() + ChatColor.RED + "You are already in the game!");
             return;
         }
         if (isFull()) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "This arena is full!");
+            player.sendMessage(plugin.prefix() + ChatColor.RED + "The game is full!");
             return;
         }
 
         GamePlayer gp = new GamePlayer(player);
         players.add(gp);
 
-        player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You joined arena " + ChatColor.GOLD + name + ChatColor.GREEN + "!");
-        broadcast(ChatColor.GREEN + player.getName() + " joined the arena! (" + players.size() + "/" + 16 + ")");
-
-        if (spawnLocation != null) {
-            player.teleport(spawnLocation);
-        } else if (lobbyLocation != null) {
-            player.teleport(lobbyLocation);
-        }
-        player.setGameMode(GameMode.ADVENTURE);
-        player.getInventory().clear();
-        player.setHealth(20);
-        player.setFoodLevel(20);
-
         if (phase == Phase.LOBBY) {
+            player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You joined the game!");
+            broadcast(ChatColor.GREEN + player.getName() + " joined the game! (" + players.size() + "/" + 16 + ")");
+
+            if (spawnLocation != null) {
+                player.teleport(spawnLocation);
+            } else if (lobbyLocation != null) {
+                player.teleport(lobbyLocation);
+            }
+            player.setGameMode(GameMode.ADVENTURE);
+            player.getInventory().clear();
+            player.setHealth(20);
+            player.setFoodLevel(20);
+
             player.getInventory().setItem(getItemSlot("role-selector"), ItemBuilder.create(plugin, "role-selector"));
-        }
 
-        if (bossBar != null) {
-            bossBar.addPlayer(player);
-        }
+            if (bossBar != null) {
+                bossBar.addPlayer(player);
+            }
 
-        scoreboardHelper.updateLobby();
+            scoreboardHelper.updateLobby();
 
-        if (players.size() >= minPlayers && taskId == -1) {
-            startLobbyCountdown();
+            if (players.size() >= minPlayers && taskId == -1) {
+                startLobbyCountdown();
+            }
+        } else {
+            gp.setAlive(false);
+            player.sendMessage(plugin.prefix() + ChatColor.YELLOW + "A game is already in progress. You are spectating!");
+            broadcast(ChatColor.YELLOW + player.getName() + " joined as a spectator.");
+
+            if (spawnLocation != null) {
+                player.teleport(spawnLocation);
+            }
+            player.setGameMode(GameMode.SPECTATOR);
+            player.getInventory().clear();
+            player.setHealth(20);
+            player.setFoodLevel(20);
+
+            if (bossBar != null) {
+                bossBar.addPlayer(player);
+            }
+
+            scoreboardHelper.updateGame();
         }
     }
 
@@ -237,7 +251,7 @@ public class Arena {
             player.teleport(player.getWorld().getSpawnLocation());
         }
 
-        broadcast(ChatColor.YELLOW + player.getName() + " left the arena! (" + players.size() + "/" + 16 + ")");
+        broadcast(ChatColor.YELLOW + player.getName() + " left the game! (" + players.size() + "/" + 16 + ")");
 
         if (phase == Phase.LOBBY && taskId != -1 && players.size() < minPlayers) {
             cancelTask();
@@ -1149,6 +1163,12 @@ public class Arena {
         cupidId = null;
         phase = Phase.LOBBY;
         scoreboardHelper.setupLobby();
+
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (!isPlayerInArena(online)) {
+                addPlayer(online);
+            }
+        }
     }
 
     private void revealAllRoles() {
@@ -1196,6 +1216,12 @@ public class Arena {
         phase = Phase.LOBBY;
         scoreboardHelper.setupLobby();
         broadcast(ChatColor.RED + "The game has been force stopped.");
+
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (!isPlayerInArena(online)) {
+                addPlayer(online);
+            }
+        }
     }
 
     private void cancelTask() {

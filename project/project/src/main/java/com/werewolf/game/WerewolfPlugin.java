@@ -24,7 +24,7 @@ public class WerewolfPlugin extends JavaPlugin {
 
         arenaManager.getWorldManager().getWorldsFolder();
 
-        arenaManager.loadArenasFromConfig();
+        arenaManager.loadGameFromConfig();
 
         WerewolfCommand command = new WerewolfCommand(this);
         getCommand("werewolf").setExecutor(command);
@@ -46,10 +46,8 @@ public class WerewolfPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (arenaManager != null) {
-            for (Arena arena : arenaManager.getArenas()) {
-                arena.forceStop();
-            }
+        if (arenaManager != null && arenaManager.getGame() != null) {
+            arenaManager.getGame().forceStop();
         }
         getLogger().info("Werewolf plugin disabled!");
     }

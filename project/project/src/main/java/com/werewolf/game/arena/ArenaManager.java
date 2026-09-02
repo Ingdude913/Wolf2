@@ -13,22 +13,21 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
 public class ArenaManager {
 
     private final WerewolfPlugin plugin;
-    private final Map<String, Arena> arenas = new HashMap<>();
+    private Arena game;
     private final WorldManager worldManager;
-    private File arenasFile;
-    private FileConfiguration arenasConfig;
+    private File gameFile;
+    private FileConfiguration gameConfig;
     private Location globalLobby;
 
     public ArenaManager(WerewolfPlugin plugin) {
         this.plugin = plugin;
         this.worldManager = new WorldManager(plugin);
-        loadArenasFile();
+        loadGameFile();
         loadGlobalLobby();
     }
 
@@ -39,20 +38,20 @@ public class ArenaManager {
     public void setGlobalLobby(Location loc) {
         this.globalLobby = loc;
         if (loc != null) {
-            arenasConfig.set("global-lobby.world", loc.getWorld().getName());
-            arenasConfig.set("global-lobby.x", loc.getX());
-            arenasConfig.set("global-lobby.y", loc.getY());
-            arenasConfig.set("global-lobby.z", loc.getZ());
-            arenasConfig.set("global-lobby.yaw", loc.getYaw());
-            arenasConfig.set("global-lobby.pitch", loc.getPitch());
+            gameConfig.set("global-lobby.world", loc.getWorld().getName());
+            gameConfig.set("global-lobby.x", loc.getX());
+            gameConfig.set("global-lobby.y", loc.getY());
+            gameConfig.set("global-lobby.z", loc.getZ());
+            gameConfig.set("global-lobby.yaw", loc.getYaw());
+            gameConfig.set("global-lobby.pitch", loc.getPitch());
         } else {
-            arenasConfig.set("global-lobby", null);
+            gameConfig.set("global-lobby", null);
         }
-        saveArenasFile();
+        saveGameFile();
     }
 
     private void loadGlobalLobby() {
-        ConfigurationSection section = arenasConfig.getConfigurationSection("global-lobby");
+        ConfigurationSection section = gameConfig.getConfigurationSection("global-lobby");
         if (section == null) return;
         String worldName = section.getString("world");
         if (worldName == null) return;
@@ -77,85 +76,70 @@ public class ArenaManager {
         return worldManager;
     }
 
-    private void loadArenasFile() {
-        arenasFile = new File(plugin.getDataFolder(), "arenas.yml");
-        if (!arenasFile.exists()) {
+    private void loadGameFile() {
+        gameFile = new File(plugin.getDataFolder(), "game.yml");
+        if (!gameFile.exists()) {
             try {
-                arenasFile.createNewFile();
+                gameFile.createNewFile();
             } catch (IOException e) {
-                plugin.getLogger().warning("Could not create arenas.yml: " + e.getMessage());
+                plugin.getLogger().warning("Could not create game.yml: " + e.getMessage());
             }
         }
-        arenasConfig = YamlConfiguration.loadConfiguration(arenasFile);
+        gameConfig = YamlConfiguration.loadConfiguration(gameFile);
     }
 
-    public void loadArenasFromConfig() {
-        if (arenasConfig == null) return;
+    public void loadGameFromConfig() {
+        if (gameConfig == null) return;
 
-        ConfigurationSection root = arenasConfig.getConfigurationSection("arenas");
-        if (root == null) return;
+        ConfigurationSection section = gameConfig.getConfigurationSection("game");
+        if (section == null) return;
 
-        for (String arenaName : root.getKeys(false)) {
-            ConfigurationSection section = root.getConfigurationSection(arenaName);
-            if (section == null) continue;
+        String worldName = section.getString("world");
+        if (worldName == null) return;
 
-            String worldName = section.getString("world");
-            if (worldName == null) continue;
-
-            World world = worldManager.loadWorld(worldName);
-            if (world == null) {
-                plugin.getLogger().warning("Could not load world '" + worldName + "' for arena '" + arenaName + "'. Skipping.");
-                continue;
-            }
-
-            Arena arena = new Arena(plugin, arenaName, worldName);
-
-            Location lobby = deserializeLocation(section, "lobby", world);
-            Location spawn = deserializeLocation(section, "spawn", world);
-            if (lobby != null) arena.setLobbyLocation(lobby);
-            if (spawn != null) arena.setSpawnLocation(spawn);
-
-            arenas.put(arenaName, arena);
-            plugin.getLogger().info("Loaded arena '" + arenaName + "' (world: " + worldName + ").");
+        World world = worldManager.loadWorld(worldName);
+        if (world == null) {
+            plugin.getLogger().warning("Could not load world '" + worldName + "' for the game. Skipping.");
+            return;
         }
+
+        game = new Arena(plugin, "game", worldName);
+
+        Location spawn = deserializeLocation(section, "spawn", world);
+        if (spawn != null) game.setSpawnLocation(spawn);
+
+        plugin.getLogger().info("Loaded game (world: " + worldName + ").");
     }
 
-    public void saveArena(Arena arena) {
-        if (arenasConfig == null) return;
+    public void saveGame() {
+        if (gameConfig == null || game == null) return;
 
-        String path = "arenas." + arena.getName();
-        arenasConfig.set(path + ".world", arena.getWorldName());
+        String path = "game";
+        gameConfig.set(path + ".world", game.getWorldName());
 
-        serializeLocation(arena.getLobbyLocation(), path + ".lobby");
-        serializeLocation(arena.getSpawnLocation(), path + ".spawn");
+        serializeLocation(game.getSpawnLocation(), path + ".spawn");
 
-        saveArenasFile();
+        saveGameFile();
     }
 
-    public void removeArenaFromConfig(String arenaName) {
-        if (arenasConfig == null) return;
-        arenasConfig.set("arenas." + arenaName, null);
-        saveArenasFile();
-    }
-
-    private void saveArenasFile() {
+    private void saveGameFile() {
         try {
-            arenasConfig.save(arenasFile);
+            gameConfig.save(gameFile);
         } catch (IOException e) {
-            plugin.getLogger().warning("Could not save arenas.yml: " + e.getMessage());
+            plugin.getLogger().warning("Could not save game.yml: " + e.getMessage());
         }
     }
 
     private void serializeLocation(Location loc, String path) {
         if (loc == null) {
-            arenasConfig.set(path, null);
+            gameConfig.set(path, null);
             return;
         }
-        arenasConfig.set(path + ".x", loc.getX());
-        arenasConfig.set(path + ".y", loc.getY());
-        arenasConfig.set(path + ".z", loc.getZ());
-        arenasConfig.set(path + ".yaw", loc.getYaw());
-        arenasConfig.set(path + ".pitch", loc.getPitch());
+        gameConfig.set(path + ".x", loc.getX());
+        gameConfig.set(path + ".y", loc.getY());
+        gameConfig.set(path + ".z", loc.getZ());
+        gameConfig.set(path + ".yaw", loc.getYaw());
+        gameConfig.set(path + ".pitch", loc.getPitch());
     }
 
     private Location deserializeLocation(ConfigurationSection parent, String key, World world) {
@@ -169,40 +153,41 @@ public class ArenaManager {
         return new Location(world, x, y, z, yaw, pitch);
     }
 
-    public Arena createArena(String name, String worldName) {
-        Arena arena = new Arena(plugin, name, worldName);
-        arenas.put(name, arena);
-        saveArena(arena);
-        return arena;
-    }
-
-    public Arena getArena(String name) {
-        return arenas.get(name);
-    }
-
-    public void deleteArena(String name) {
-        Arena arena = arenas.get(name);
-        if (arena != null) {
-            arena.forceStop();
-            arenas.remove(name);
+    public Arena createGame(String worldName) {
+        if (game != null) {
+            game.forceStop();
         }
-        removeArenaFromConfig(name);
+        game = new Arena(plugin, "game", worldName);
+        saveGame();
+        return game;
+    }
+
+    public Arena getGame() {
+        return game;
+    }
+
+    public boolean gameExists() {
+        return game != null;
+    }
+
+    public void deleteGame() {
+        if (game != null) {
+            game.forceStop();
+            game = null;
+        }
+        gameConfig.set("game", null);
+        saveGameFile();
     }
 
     public Collection<Arena> getArenas() {
-        return arenas.values();
+        if (game == null) return Collections.emptyList();
+        return Collections.singleton(game);
     }
 
     public Arena getArenaByPlayer(Player player) {
-        for (Arena arena : arenas.values()) {
-            if (arena.isPlayerInArena(player)) {
-                return arena;
-            }
+        if (game != null && game.isPlayerInArena(player)) {
+            return game;
         }
         return null;
-    }
-
-    public boolean arenaExists(String name) {
-        return arenas.containsKey(name);
     }
 }
