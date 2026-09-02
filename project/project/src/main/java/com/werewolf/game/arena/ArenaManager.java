@@ -144,7 +144,15 @@ public class ArenaManager {
     }
 
     public void loadGameFromConfig() {
-        // No longer auto-loads a single game world; the Arena is created on demand
+        String worldName = gameConfig.getString("active-game-world");
+        if (worldName == null) return;
+        worldManager.loadWorld(worldName);
+        game = new Arena(plugin, "game", worldName);
+        Location spawn = worldSpawns.get(worldName);
+        if (spawn != null) {
+            game.setSpawnLocation(spawn);
+        }
+        plugin.getLogger().info("Restored game arena in world '" + worldName + "'.");
     }
 
     public void saveGame() {
@@ -168,6 +176,8 @@ public class ArenaManager {
         if (spawn != null) {
             game.setSpawnLocation(spawn);
         }
+        gameConfig.set("active-game-world", worldName);
+        saveGameFile();
         return game;
     }
 
@@ -184,6 +194,7 @@ public class ArenaManager {
             game.forceStop();
             game = null;
         }
+        gameConfig.set("active-game-world", null);
         saveGameFile();
     }
 
