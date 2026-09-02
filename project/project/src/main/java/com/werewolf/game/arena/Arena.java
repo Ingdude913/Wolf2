@@ -682,7 +682,7 @@ public class Arena {
         if (eliminated == null) return;
         GamePlayer gp = getGamePlayer(eliminated);
         if (gp == null || !gp.isAlive()) return;
-        if (gp.getRole().isMasochist()) {
+        if (gp.getRole().isMasochist() && !debugMode) {
             broadcast(ChatColor.GOLD + "===== MASOCHIST WINS =====");
             broadcast(ChatColor.YELLOW + eliminated.getName() + " received the most votes and was the Masochist! They win!");
             endGame("Masochist", eliminated.getName() + " (Masochist) received the most votes and wins!");
@@ -1026,10 +1026,10 @@ public class Arena {
             return;
         }
 
-        ItemStack helmet = new ItemStack(Material.NETHERITE_HELMET);
+        ItemStack helmet = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_HELMET));
         ItemStack chestplate = ItemBuilder.create(plugin, "werewolf-armor");
-        ItemStack leggings = new ItemStack(Material.NETHERITE_LEGGINGS);
-        ItemStack boots = new ItemStack(Material.NETHERITE_BOOTS);
+        ItemStack leggings = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_LEGGINGS));
+        ItemStack boots = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_BOOTS));
         inv.setHelmet(helmet);
         inv.setChestplate(chestplate);
         inv.setLeggings(leggings);
@@ -1054,10 +1054,20 @@ public class Arena {
         if (debugMode) return false;
         if (players.isEmpty()) return true;
         Set<GamePlayer> alive = getAlivePlayers();
-        boolean badAlive = alive.stream().anyMatch(gp -> gp.getRole().isBad());
-        boolean goodAlive = alive.stream().anyMatch(gp -> gp.getRole().isGood());
         if (alive.isEmpty()) {
             endGame("Draw", "Everyone has been eliminated!");
+            return true;
+        }
+
+        boolean badAlive = alive.stream().anyMatch(gp -> gp.getRole().isBad());
+        boolean goodAlive = alive.stream().anyMatch(gp -> gp.getRole().isGood());
+
+        if (!badAlive && !goodAlive) {
+            if (areSpousesAlive()) {
+                endGame("Spouses", "All other teams have been eliminated and the spouses are both alive!");
+                return true;
+            }
+            endGame("Neutral team", "All werewolves and villagers have been eliminated!");
             return true;
         }
         if (!badAlive) {
@@ -1519,10 +1529,10 @@ public class Arena {
                 }.runTaskLater(plugin, durationTicks);
                 break;
             case "disguise":
-                ItemStack fakeHelmet = new ItemStack(Material.NETHERITE_HELMET);
-                ItemStack fakeChest = new ItemStack(Material.NETHERITE_CHESTPLATE);
-                ItemStack fakeLegs = new ItemStack(Material.NETHERITE_LEGGINGS);
-                ItemStack fakeBoots = new ItemStack(Material.NETHERITE_BOOTS);
+                ItemStack fakeHelmet = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_HELMET));
+                ItemStack fakeChest = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_CHESTPLATE));
+                ItemStack fakeLegs = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_LEGGINGS));
+                ItemStack fakeBoots = ItemBuilder.makeUnbreakable(new ItemStack(Material.NETHERITE_BOOTS));
                 PlayerInventory inv = player.getInventory();
                 ItemStack oldHelmet = inv.getHelmet();
                 ItemStack oldChest = inv.getChestplate();

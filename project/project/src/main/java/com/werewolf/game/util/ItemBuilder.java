@@ -29,6 +29,7 @@ public class ItemBuilder {
         if (meta != null) {
             String name = section.getString("name", "");
             meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+            meta.setUnbreakable(true);
             item.setItemMeta(meta);
         }
         return item;
@@ -39,6 +40,7 @@ public class ItemBuilder {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+            meta.setUnbreakable(true);
             item.setItemMeta(meta);
         }
         return item;
@@ -49,11 +51,22 @@ public class ItemBuilder {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
+            meta.setUnbreakable(true);
             List<String> loreList = new ArrayList<>();
             for (String line : lore) {
                 loreList.add(ChatColor.translateAlternateColorCodes('&', line));
             }
             meta.setLore(loreList);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    public static ItemStack makeUnbreakable(ItemStack item) {
+        if (item == null) return null;
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
             item.setItemMeta(meta);
         }
         return item;
