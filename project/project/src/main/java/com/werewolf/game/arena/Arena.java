@@ -1233,20 +1233,22 @@ public class Arena {
         long ninjas = players.stream().filter(gp -> gp.getRole().isNinja()).count();
         long mermaids = players.stream().filter(gp -> gp.getRole().isMermaid()).count();
         long masochists = players.stream().filter(gp -> gp.getRole().isMasochist()).count();
+        long cupids = players.stream().filter(gp -> gp.getRole().isCupid()).count();
 
         int dayDur = plugin.getConfig().getInt("day-duration", 120);
         int nightDur = plugin.getConfig().getInt("night-duration", 60);
 
         player.sendMessage(plugin.prefix() + ChatColor.DARK_AQUA + "===== Game Setup =====");
-        player.sendMessage(ChatColor.RED + "Werewolves: " + ChatColor.WHITE + werewolves);
-        player.sendMessage(ChatColor.GOLD + "Tricksters: " + ChatColor.WHITE + tricksters);
-        player.sendMessage(ChatColor.DARK_PURPLE + "Witches: " + ChatColor.WHITE + witches);
-        player.sendMessage(ChatColor.BLUE + "Seers: " + ChatColor.WHITE + seers);
-        player.sendMessage(ChatColor.GOLD + "Hunters: " + ChatColor.WHITE + hunters);
-        player.sendMessage(ChatColor.GREEN + "Villagers: " + ChatColor.WHITE + villagers);
-        player.sendMessage(ChatColor.DARK_PURPLE + "Ninjas: " + ChatColor.WHITE + ninjas);
-        player.sendMessage(ChatColor.AQUA + "Mermaids: " + ChatColor.WHITE + mermaids);
-        player.sendMessage(ChatColor.DARK_GREEN + "Masochists: " + ChatColor.WHITE + masochists);
+        if (werewolves > 0) player.sendMessage(ChatColor.RED + "Werewolves: " + ChatColor.WHITE + werewolves);
+        if (tricksters > 0) player.sendMessage(ChatColor.GOLD + "Tricksters: " + ChatColor.WHITE + tricksters);
+        if (witches > 0) player.sendMessage(ChatColor.DARK_PURPLE + "Witches: " + ChatColor.WHITE + witches);
+        if (seers > 0) player.sendMessage(ChatColor.BLUE + "Seers: " + ChatColor.WHITE + seers);
+        if (hunters > 0) player.sendMessage(ChatColor.GOLD + "Hunters: " + ChatColor.WHITE + hunters);
+        if (villagers > 0) player.sendMessage(ChatColor.GREEN + "Villagers: " + ChatColor.WHITE + villagers);
+        if (ninjas > 0) player.sendMessage(ChatColor.DARK_PURPLE + "Ninjas: " + ChatColor.WHITE + ninjas);
+        if (mermaids > 0) player.sendMessage(ChatColor.AQUA + "Mermaids: " + ChatColor.WHITE + mermaids);
+        if (masochists > 0) player.sendMessage(ChatColor.DARK_GREEN + "Masochists: " + ChatColor.WHITE + masochists);
+        if (cupids > 0) player.sendMessage(ChatColor.LIGHT_PURPLE + "Cupids: " + ChatColor.WHITE + cupids);
         player.sendMessage(ChatColor.WHITE + "Total Players: " + ChatColor.WHITE + total);
         player.sendMessage(ChatColor.YELLOW + "Day Duration: " + ChatColor.WHITE + dayDur + " seconds");
         player.sendMessage(ChatColor.BLUE + "Night Duration: " + ChatColor.WHITE + nightDur + " seconds");
