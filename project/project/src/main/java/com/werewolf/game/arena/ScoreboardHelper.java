@@ -154,6 +154,8 @@ public class ScoreboardHelper {
         setLine(line--, msg.get("scoreboard.game.separator-1"));
         setLine(line--, msg.get("scoreboard.game.phase-label",
                 MessageUtil.ph("color", colorStr, "phase", phaseName)));
+        setLine(line--, msg.get("scoreboard.game.day-count",
+                MessageUtil.ph("day", String.valueOf(arena.getDayCount()))));
         setLine(line--, msg.get("scoreboard.game.timer-label",
                 MessageUtil.ph("color", colorStr, "timer", String.valueOf(Math.max(0, timer)))));
         setLine(line--, msg.get("scoreboard.game.separator-2"));

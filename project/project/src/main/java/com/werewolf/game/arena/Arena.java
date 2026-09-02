@@ -65,6 +65,7 @@ public class Arena {
     private boolean debugMode = false;
     private boolean firstDay = true;
     private boolean sheriffEnabled = true;
+    private int dayCount = 0;
 
     private final Map<UUID, Integer> sheriffElectionVotes = new HashMap<>();
     private UUID sheriffId = null;
@@ -116,6 +117,18 @@ public class Arena {
 
     public ScoreboardHelper getScoreboardHelper() {
         return scoreboardHelper;
+    }
+
+    public int getDayCount() {
+        return dayCount;
+    }
+
+    private void sendPhaseTitle(String title, String subtitle) {
+        String coloredTitle = ColorUtil.color(title);
+        String coloredSubtitle = ColorUtil.color(subtitle);
+        for (GamePlayer gp : players) {
+            gp.getPlayer().sendTitle(coloredTitle, coloredSubtitle, 10, 40, 10);
+        }
     }
 
     public String getName() {
@@ -337,6 +350,7 @@ public class Arena {
     }
 
     public void startGame() {
+        dayCount = 0;
         loadSelectedWorld();
         assignRoles();
         teleportPlayersToSpawn();
@@ -367,6 +381,7 @@ public class Arena {
         phase = Phase.SHERIFF_ELECTION;
         phaseTimer = electionDuration;
         setWorldTime(6000);
+        sendPhaseTitle("&6Sheriff Election", "&7Day " + dayCount);
         broadcast(msg().get("game.sheriff-header"));
         broadcast(msg().get("game.sheriff-instruct-1"));
         broadcast(msg().get("game.sheriff-instruct-2"));
@@ -704,6 +719,8 @@ public class Arena {
         phase = Phase.DAY;
         phaseTimer = dayDuration;
         setWorldTime(6000);
+        dayCount++;
+        sendPhaseTitle("&6Day", "&7Day " + dayCount);
 
         for (GamePlayer gp : getAlivePlayers()) {
             Player p = gp.getPlayer();
@@ -859,6 +876,7 @@ public class Arena {
         phase = Phase.NIGHT;
         phaseTimer = nightDuration;
         setWorldTime(18000);
+        sendPhaseTitle("&5Night", "&7Day " + dayCount);
 
         for (GamePlayer gp : getAlivePlayers()) {
             Player p = gp.getPlayer();
@@ -1352,6 +1370,7 @@ public class Arena {
         spouses.clear();
         cupidId = null;
         phase = Phase.LOBBY;
+        dayCount = 0;
         scoreboardHelper.setupLobby();
         broadcast(msg().get("game.force-stopped"));
 

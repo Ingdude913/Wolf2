@@ -84,6 +84,7 @@ scoreboard:
     phase-night: "NIGHT"
     phase-ended: "ENDED"
     phase-label: "{color}Phase: &f{phase}"
+    day-count: "&eDay: &f{day}"
     timer-label: "{color}Time: &f{timer}s"
     alive: "&aAlive: &f{alive}"
     dead: "&cDead: &f{dead}"
