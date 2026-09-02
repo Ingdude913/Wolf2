@@ -9,6 +9,7 @@ import com.werewolf.game.gui.RoleSelectorGUI;
 import com.werewolf.game.gui.CupidGUI;
 import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
+import com.werewolf.game.gui.MapSelectorGUI;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -114,6 +115,20 @@ public class InventoryClickListener implements Listener {
                 player.sendMessage(plugin.prefix() + ChatColor.RED + "Removed one " + roleKey + "! Total: " + arena.getRoleSelection().getOrDefault(roleKey, 0));
                 RoleSelectorGUI.update(player, arena.getRoleSelection(), arena.isSheriffEnabled());
             }
+        } else if (MapSelectorGUI.isMapSelectorGUI(title)) {
+            event.setCancelled(true);
+
+            if (arena == null) return;
+            if (arena.getPhase() != Phase.LOBBY) return;
+
+            int slot = event.getRawSlot();
+            if (slot < 0 || slot >= inv.getSize()) return;
+
+            String worldName = MapSelectorGUI.getWorldAtSlot(player, slot);
+            if (worldName == null) return;
+
+            arena.voteForMap(player, worldName);
+            MapSelectorGUI.open(plugin, arena, player);
         } else if (SheriffGUI.isSheriffGUI(title)) {
             event.setCancelled(true);
 
@@ -160,6 +175,8 @@ public class InventoryClickListener implements Listener {
             CupidGUI.clearMapping(player);
         } else if (RoleSelectorGUI.isRoleSelectorGUI(title)) {
             RoleSelectorGUI.clearMapping(player);
+        } else if (MapSelectorGUI.isMapSelectorGUI(title)) {
+            MapSelectorGUI.clearMapping(player);
         }
     }
 }

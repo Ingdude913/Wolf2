@@ -46,7 +46,11 @@ items:
   role-selector:
     material: NETHER_STAR
     name: "&b&lRole Selector &7(Right-click to setup roles)"
-    slot: 4
+    slot: 3
+  map-selector:
+    material: FILLED_MAP
+    name: "&a&lMap Selector &7(Right-click to vote for a map)"
+    slot: 5
   vote-sheriff:
     material: PAPER
     name: "&6&lVote Sheriff &7(Right-click to vote for the Sheriff)"

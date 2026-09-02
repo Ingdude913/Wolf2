@@ -2,6 +2,7 @@ package com.werewolf.game.arena;
 
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.game.*;
+import com.werewolf.game.gui.MapSelectorGUI;
 import com.werewolf.game.gui.RoleSelectorGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.roles.*;
@@ -13,6 +14,7 @@ import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.Particle;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -68,6 +70,7 @@ public class Arena {
 
     private final Map<String, Integer> roleSelection = new HashMap<>();
     private final Map<UUID, Integer> fakeVoteCounts = new HashMap<>();
+    private final Map<UUID, String> mapVotes = new HashMap<>();
 
     private BossBar bossBar = null;
     private int actionBarTaskId = -1;
@@ -191,7 +194,10 @@ public class Arena {
             player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You joined the game!");
             broadcast(ChatColor.GREEN + player.getName() + " joined the game! (" + players.size() + "/" + 16 + ")");
 
-            if (spawnLocation != null) {
+            Location lobby = plugin.getArenaManager().getGlobalLobby();
+            if (lobby != null) {
+                player.teleport(lobby);
+            } else if (spawnLocation != null) {
                 player.teleport(spawnLocation);
             } else if (lobbyLocation != null) {
                 player.teleport(lobbyLocation);
@@ -202,6 +208,7 @@ public class Arena {
             player.setFoodLevel(20);
 
             player.getInventory().setItem(getItemSlot("role-selector"), ItemBuilder.create(plugin, "role-selector"));
+            player.getInventory().setItem(getItemSlot("map-selector"), ItemBuilder.create(plugin, "map-selector"));
 
             if (bossBar != null) {
                 bossBar.addPlayer(player);
@@ -241,6 +248,7 @@ public class Arena {
         particleTrailPlayers.remove(player.getUniqueId());
         voteCounts.remove(player.getUniqueId());
         hunterTargets.remove(player.getUniqueId());
+        mapVotes.remove(player.getUniqueId());
 
         player.getInventory().clear();
         player.setGameMode(GameMode.SURVIVAL);
@@ -324,6 +332,7 @@ public class Arena {
     }
 
     public void startGame() {
+        loadSelectedWorld();
         assignRoles();
         teleportPlayersToSpawn();
         for (GamePlayer gp : players) {
@@ -587,6 +596,77 @@ public class Arena {
                 gp.getPlayer().teleport(spawnLocation);
             }
         }
+    }
+
+    private void loadSelectedWorld() {
+        String selectedWorld = getSelectedMap();
+        if (selectedWorld == null) return;
+        if (selectedWorld.equals(worldName) && spawnLocation != null) return;
+        World world = plugin.getArenaManager().getWorldManager().loadWorld(selectedWorld);
+        if (world == null) {
+            broadcast(ChatColor.RED + "Failed to load map '" + selectedWorld + "'! Using default world.");
+            return;
+        }
+        worldName = selectedWorld;
+        Location spawn = plugin.getArenaManager().getWorldSpawn(selectedWorld);
+        if (spawn != null) {
+            spawn.setWorld(world);
+            spawnLocation = spawn;
+        } else {
+            spawnLocation = world.getSpawnLocation();
+        }
+        broadcast(ChatColor.GREEN + "Map selected: " + ChatColor.GOLD + selectedWorld);
+    }
+
+    private String getSelectedMap() {
+        Map<String, Integer> counts = new HashMap<>();
+        for (String world : mapVotes.values()) {
+            counts.merge(world, 1, Integer::sum);
+        }
+        String winner = null;
+        int maxVotes = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() > maxVotes) {
+                maxVotes = entry.getValue();
+                winner = entry.getKey();
+            }
+        }
+        if (winner == null) {
+            List<String> worlds = plugin.getArenaManager().getAvailableWorlds();
+            if (!worlds.isEmpty()) {
+                winner = worlds.get(new Random().nextInt(worlds.size()));
+            }
+        }
+        return winner;
+    }
+
+    public void voteForMap(Player player, String worldName) {
+        GamePlayer gp = getGamePlayer(player);
+        if (gp == null || !gp.isAlive()) return;
+        if (phase != Phase.LOBBY) {
+            player.sendMessage(plugin.prefix() + ChatColor.RED + "You can only vote for a map in the lobby!");
+            return;
+        }
+        List<String> available = plugin.getArenaManager().getAvailableWorlds();
+        if (!available.contains(worldName)) {
+            player.sendMessage(plugin.prefix() + ChatColor.RED + "That map is not available!");
+            return;
+        }
+        mapVotes.put(player.getUniqueId(), worldName);
+        player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You voted for map: " + ChatColor.GOLD + worldName);
+        broadcast(ChatColor.YELLOW + player.getName() + " voted for map " + ChatColor.GOLD + worldName);
+    }
+
+    public String getPlayerMapVote(Player player) {
+        return mapVotes.get(player.getUniqueId());
+    }
+
+    public Map<UUID, String> getMapVotes() {
+        return mapVotes;
+    }
+
+    public void openMapSelector(Player player) {
+        MapSelectorGUI.open(plugin, this, player);
     }
 
     private void giveDayItems() {
@@ -1157,6 +1237,7 @@ public class Arena {
         abilityCooldowns.clear();
         roleSelection.clear();
         fakeVoteCounts.clear();
+        mapVotes.clear();
         sheriffId = null;
         mermaidFreezeUntil = 0;
         spouses.clear();
@@ -1209,6 +1290,7 @@ public class Arena {
         abilityCooldowns.clear();
         roleSelection.clear();
         fakeVoteCounts.clear();
+        mapVotes.clear();
         sheriffId = null;
         mermaidFreezeUntil = 0;
         spouses.clear();

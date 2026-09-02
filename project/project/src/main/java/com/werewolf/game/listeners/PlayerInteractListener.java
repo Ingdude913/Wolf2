@@ -9,6 +9,7 @@ import com.werewolf.game.gui.RoleSelectorGUI;
 import com.werewolf.game.gui.CupidGUI;
 import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
+import com.werewolf.game.gui.MapSelectorGUI;
 import com.werewolf.game.util.ItemBuilder;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -39,6 +40,14 @@ public class PlayerInteractListener implements Listener {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.LOBBY) {
                     arena.openRoleSelector(player);
+                }
+                return;
+            }
+
+            if (ItemBuilder.isItemKey(plugin, event.getItem(), "map-selector")) {
+                event.setCancelled(true);
+                if (arena.getPhase() == Phase.LOBBY) {
+                    arena.openMapSelector(player);
                 }
                 return;
             }

@@ -51,6 +51,17 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
                 }
                 handleCreate(sender, args[1]);
                 break;
+            case "loadworld":
+                if (!sender.hasPermission("werewolf.admin")) {
+                    sender.sendMessage(plugin.prefix() + ChatColor.RED + "You don't have permission.");
+                    return true;
+                }
+                if (args.length < 2) {
+                    sender.sendMessage(plugin.prefix() + ChatColor.RED + "Usage: /ww loadworld <world>");
+                    return true;
+                }
+                handleLoadWorld(sender, args[1]);
+                break;
             case "setlobby":
                 if (!sender.hasPermission("werewolf.admin")) {
                     sender.sendMessage(plugin.prefix() + ChatColor.RED + "You don't have permission.");
@@ -175,8 +186,32 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
         player.teleport(world.getSpawnLocation());
         sender.sendMessage(plugin.prefix() + ChatColor.GREEN + "Game created with world " + worldName + "!");
         sender.sendMessage(plugin.prefix() + ChatColor.YELLOW + "You have been teleported to the world for setup.");
-        sender.sendMessage(plugin.prefix() + ChatColor.YELLOW + "Use /ww setspawn to set the game spawn location.");
+        sender.sendMessage(plugin.prefix() + ChatColor.YELLOW + "Use /ww setspawn to set the spawn for this world.");
         sender.sendMessage(plugin.prefix() + ChatColor.YELLOW + "Use /ww setlobby to set the global lobby where players wait and return after games.");
+    }
+
+    private void handleLoadWorld(CommandSender sender, String worldName) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.prefix() + ChatColor.RED + "Only players can use this command.");
+            return;
+        }
+        Player player = (Player) sender;
+        ArenaManager am = plugin.getArenaManager();
+
+        WorldManager wm = am.getWorldManager();
+        if (!wm.worldFolderExists(worldName)) {
+            sender.sendMessage(plugin.prefix() + ChatColor.RED + "World folder '" + worldName + "' not found!");
+            return;
+        }
+
+        World world = wm.loadWorld(worldName);
+        if (world == null) {
+            sender.sendMessage(plugin.prefix() + ChatColor.RED + "Failed to load world '" + worldName + "'. Check the console for errors.");
+            return;
+        }
+
+        player.teleport(world.getSpawnLocation());
+        sender.sendMessage(plugin.prefix() + ChatColor.GREEN + "World '" + worldName + "' loaded! You can now use /ww setspawn to set the spawn for this world.");
     }
 
     private void handleSetLobby(Player player) {
@@ -185,14 +220,13 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleSetSpawn(Player player) {
+        String worldName = player.getWorld().getName();
+        plugin.getArenaManager().setWorldSpawn(worldName, player.getLocation());
         Arena game = plugin.getArenaManager().getGame();
-        if (game == null) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "No game exists! Use /ww create <world> first.");
-            return;
+        if (game != null && game.getWorldName().equals(worldName)) {
+            game.setSpawnLocation(player.getLocation());
         }
-        game.setSpawnLocation(player.getLocation());
-        plugin.getArenaManager().saveGame();
-        player.sendMessage(plugin.prefix() + ChatColor.GREEN + "Spawn location set for the game!");
+        player.sendMessage(plugin.prefix() + ChatColor.GREEN + "Spawn location set for world '" + worldName + "'!");
     }
 
     private void handleForceStart(CommandSender sender) {
@@ -328,8 +362,9 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.DARK_RED + "===== " + ChatColor.RED + "Werewolf Commands" + ChatColor.DARK_RED + " =====");
         if (sender.hasPermission("werewolf.admin")) {
             sender.sendMessage(ChatColor.GOLD + "/ww create <world>" + ChatColor.GRAY + " - Set up the game world from a world folder");
+            sender.sendMessage(ChatColor.GOLD + "/ww loadworld <world>" + ChatColor.GRAY + " - Load a world to set its spawn point");
             sender.sendMessage(ChatColor.GOLD + "/ww setlobby" + ChatColor.GRAY + " - Set the global lobby location (players spawn here)");
-            sender.sendMessage(ChatColor.GOLD + "/ww setspawn" + ChatColor.GRAY + " - Set the game spawn location");
+            sender.sendMessage(ChatColor.GOLD + "/ww setspawn" + ChatColor.GRAY + " - Set the spawn location for the world you are standing in");
             sender.sendMessage(ChatColor.GOLD + "/ww forcestart" + ChatColor.GRAY + " - Force start the game");
             sender.sendMessage(ChatColor.GOLD + "/ww forcestop" + ChatColor.GRAY + " - Force stop the game");
             sender.sendMessage(ChatColor.GOLD + "/ww debug" + ChatColor.GRAY + " - Toggle debug mode (1-player start, role control)");
@@ -348,6 +383,7 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
             completions.add("help");
             if (sender.hasPermission("werewolf.admin")) {
                 completions.add("create");
+                completions.add("loadworld");
                 completions.add("setlobby");
                 completions.add("setspawn");
                 completions.add("forcestart");
@@ -361,7 +397,7 @@ public class WerewolfCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 2) {
             String sub = args[0].toLowerCase();
-            if (sub.equals("create")) {
+            if (sub.equals("create") || sub.equals("loadworld")) {
                 WorldManager wm = plugin.getArenaManager().getWorldManager();
                 File worldsFolder = wm.getWorldsFolder();
                 File[] dirs = worldsFolder.listFiles(File::isDirectory);
