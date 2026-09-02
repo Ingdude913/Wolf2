@@ -1082,6 +1082,39 @@ public class Arena {
         seer.sendMessage(plugin.prefix() + ChatColor.BLUE + target.getName() + " is on the " + teamName + ChatColor.BLUE + " team.");
     }
 
+    public void seerLampSwap(Player seer) {
+        GamePlayer seerGp = getGamePlayer(seer);
+        if (seerGp == null || !seerGp.isAlive()) return;
+        SeerRole seerRole = seerGp.asSeer();
+        if (seerRole == null) return;
+        if (seerRole.hasUsedLampTonight()) {
+            seer.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used the Lamp tonight!");
+            return;
+        }
+        Player furthest = null;
+        double maxDist = -1;
+        for (GamePlayer gp : getAlivePlayers()) {
+            Player p = gp.getPlayer();
+            if (p.getUniqueId().equals(seer.getUniqueId())) continue;
+            double dist = p.getLocation().distanceSquared(seer.getLocation());
+            if (dist > maxDist) {
+                maxDist = dist;
+                furthest = p;
+            }
+        }
+        if (furthest == null) {
+            seer.sendMessage(plugin.prefix() + ChatColor.RED + "No other alive players found!");
+            return;
+        }
+        seerRole.setUsedLampTonight(true);
+        Location seerLoc = seer.getLocation().clone();
+        Location targetLoc = furthest.getLocation().clone();
+        seer.teleport(targetLoc);
+        furthest.teleport(seerLoc);
+        seer.sendMessage(plugin.prefix() + ChatColor.GOLD + "Lamp to the Slaughter! You swapped positions with " + furthest.getName() + "!");
+        furthest.sendMessage(plugin.prefix() + ChatColor.GOLD + "A mysterious force has swapped your position with someone!");
+    }
+
     public void hunterSelectTarget(Player hunter, Player target) {
         GamePlayer hunterGp = getGamePlayer(hunter);
         GamePlayer targetGp = getGamePlayer(target);

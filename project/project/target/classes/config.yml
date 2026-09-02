@@ -119,3 +119,7 @@ items:
     material: BOW
     name: "&d&lBow of Love &7(Right-click a player to select as spouse)"
     slot: 2
+  seer-lamp:
+    material: LANTERN
+    name: "&6&lLamp to the Slaughter &7(Right-click to swap with the furthest player)"
+    slot: 4

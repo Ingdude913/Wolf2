@@ -84,6 +84,14 @@ public class PlayerInteractListener implements Listener {
                 return;
             }
 
+            if (ItemBuilder.isItemKey(plugin, event.getItem(), "seer-lamp")) {
+                event.setCancelled(true);
+                if (arena.getPhase() == Phase.NIGHT) {
+                    arena.seerLampSwap(player);
+                }
+                return;
+            }
+
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "werewolf-armor")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
