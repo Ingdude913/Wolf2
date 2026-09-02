@@ -18,7 +18,7 @@ public class PlayerJoinListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        event.getPlayer().sendMessage(plugin.prefix() + "Welcome! You will be added to the game automatically.");
+        event.getPlayer().sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.welcome"));
 
         Location lobby = plugin.getArenaManager().getGlobalLobby();
         if (lobby != null) {

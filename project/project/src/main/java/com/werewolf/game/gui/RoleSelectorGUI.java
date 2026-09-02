@@ -1,6 +1,8 @@
 package com.werewolf.game.gui;
 
+import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.util.ColorUtil;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -16,8 +18,6 @@ import java.util.Map;
 
 public class RoleSelectorGUI {
 
-    public static final String GUI_TITLE = ChatColor.DARK_AQUA + "Role Selector - Setup the Game";
-
     private static final Map<Player, Map<Integer, String>> guiMappings = new HashMap<>();
     private static final Map<Player, Boolean> sheriffEnabledMap = new HashMap<>();
 
@@ -32,47 +32,52 @@ public class RoleSelectorGUI {
     public static final String ROLE_MASOCHIST = "masochist";
     public static final String ROLE_CUPID = "cupid";
 
-    public static void open(Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
+    public static String getTitle(WerewolfPlugin plugin) {
+        return plugin.getMessageUtil().get("gui.role-selector-title");
+    }
+
+    public static void open(WerewolfPlugin plugin, Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
         sheriffEnabledMap.put(player, sheriffEnabled);
-        Inventory inv = Bukkit.createInventory(player, 36, GUI_TITLE);
-        populateInventory(inv, player, currentSelection);
+        Inventory inv = Bukkit.createInventory(player, 36, getTitle(plugin));
+        populateInventory(plugin, inv, player, currentSelection);
         player.openInventory(inv);
     }
 
-    public static void update(Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
+    public static void update(WerewolfPlugin plugin, Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
         sheriffEnabledMap.put(player, sheriffEnabled);
         Inventory inv = player.getOpenInventory().getTopInventory();
-        if (inv == null || !isRoleSelectorGUI(player.getOpenInventory().getTitle())) return;
-        populateInventory(inv, player, currentSelection);
+        if (inv == null || !isRoleSelectorGUI(plugin, player.getOpenInventory().getTitle())) return;
+        populateInventory(plugin, inv, player, currentSelection);
         player.updateInventory();
     }
 
-    private static void populateInventory(Inventory inv, Player player, Map<String, Integer> currentSelection) {
+    private static void populateInventory(WerewolfPlugin plugin, Inventory inv, Player player, Map<String, Integer> currentSelection) {
+        MessageUtil msg = plugin.getMessageUtil();
         Map<Integer, String> slotMap = new HashMap<>();
 
         int slot = 10;
-        slot = addRole(inv, slotMap, slot, Material.NETHERITE_AXE, ROLE_WEREWOLF, ChatColor.RED + "Werewolf", currentSelection.getOrDefault(ROLE_WEREWOLF, 0));
-        slot = addRole(inv, slotMap, slot, Material.STONE_SWORD, ROLE_VILLAGER, ChatColor.GREEN + "Villager", currentSelection.getOrDefault(ROLE_VILLAGER, 0));
-        slot = addRole(inv, slotMap, slot, Material.POTION, ROLE_WITCH, ChatColor.DARK_PURPLE + "Witch", currentSelection.getOrDefault(ROLE_WITCH, 0));
-        slot = addRole(inv, slotMap, slot, Material.BOOK, ROLE_SEER, ChatColor.BLUE + "Seer", currentSelection.getOrDefault(ROLE_SEER, 0));
-        slot = addRole(inv, slotMap, slot, Material.BOW, ROLE_HUNTER, ChatColor.GOLD + "Hunter", currentSelection.getOrDefault(ROLE_HUNTER, 0));
-        slot = addRole(inv, slotMap, slot, Material.WOLF_SPAWN_EGG, ROLE_TRICKSTER, ChatColor.DARK_RED + "Trickster", currentSelection.getOrDefault(ROLE_TRICKSTER, 0));
-        slot = addRole(inv, slotMap, slot, Material.ENDER_EYE, ROLE_NINJA, ChatColor.DARK_PURPLE + "Ninja", currentSelection.getOrDefault(ROLE_NINJA, 0));
-        slot = addRole(inv, slotMap, slot, Material.NAUTILUS_SHELL, ROLE_MERMAID, ChatColor.AQUA + "Mermaid", currentSelection.getOrDefault(ROLE_MERMAID, 0));
-        slot = addRole(inv, slotMap, slot, Material.CACTUS, ROLE_MASOCHIST, ChatColor.DARK_GREEN + "Masochist", currentSelection.getOrDefault(ROLE_MASOCHIST, 0));
-        slot = addRole(inv, slotMap, slot, Material.BOW, ROLE_CUPID, ChatColor.LIGHT_PURPLE + "Cupid", currentSelection.getOrDefault(ROLE_CUPID, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.NETHERITE_AXE, ROLE_WEREWOLF, currentSelection.getOrDefault(ROLE_WEREWOLF, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.STONE_SWORD, ROLE_VILLAGER, currentSelection.getOrDefault(ROLE_VILLAGER, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.POTION, ROLE_WITCH, currentSelection.getOrDefault(ROLE_WITCH, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.BOOK, ROLE_SEER, currentSelection.getOrDefault(ROLE_SEER, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.BOW, ROLE_HUNTER, currentSelection.getOrDefault(ROLE_HUNTER, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.WOLF_SPAWN_EGG, ROLE_TRICKSTER, currentSelection.getOrDefault(ROLE_TRICKSTER, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.ENDER_EYE, ROLE_NINJA, currentSelection.getOrDefault(ROLE_NINJA, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.NAUTILUS_SHELL, ROLE_MERMAID, currentSelection.getOrDefault(ROLE_MERMAID, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.CACTUS, ROLE_MASOCHIST, currentSelection.getOrDefault(ROLE_MASOCHIST, 0));
+        slot = addRole(plugin, inv, slotMap, slot, Material.BOW, ROLE_CUPID, currentSelection.getOrDefault(ROLE_CUPID, 0));
 
         boolean sheriffEnabled = sheriffEnabledMap.getOrDefault(player, true);
         ItemStack sheriffToggle = new ItemStack(sheriffEnabled ? Material.EMERALD : Material.REDSTONE);
         ItemMeta sheriffMeta = sheriffToggle.getItemMeta();
         if (sheriffMeta != null) {
-            sheriffMeta.setDisplayName(ColorUtil.color(ChatColor.GOLD + "Sheriff Election: " + (sheriffEnabled ? ChatColor.GREEN + "ENABLED" : ChatColor.RED + "DISABLED")));
+            sheriffMeta.setDisplayName(msg.get(sheriffEnabled ? "gui-items.sheriff-toggle.enabled" : "gui-items.sheriff-toggle.disabled"));
             List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "When enabled, players vote for a");
-            lore.add(ChatColor.GRAY + "Sheriff before the first night.");
-            lore.add(ChatColor.GRAY + "The Sheriff gets 2 votes during day.");
-            lore.add("");
-            lore.add(ChatColor.YELLOW + "Click to toggle on/off");
+            lore.add(msg.get("gui-items.sheriff-toggle.lore-1"));
+            lore.add(msg.get("gui-items.sheriff-toggle.lore-2"));
+            lore.add(msg.get("gui-items.sheriff-toggle.lore-3"));
+            lore.add(msg.get("gui-items.sheriff-toggle.lore-4"));
+            lore.add(msg.get("gui-items.sheriff-toggle.lore-5"));
             sheriffMeta.setLore(lore);
             sheriffToggle.setItemMeta(sheriffMeta);
         }
@@ -82,16 +87,17 @@ public class RoleSelectorGUI {
         guiMappings.put(player, slotMap);
     }
 
-    private static int addRole(Inventory inv, Map<Integer, String> slotMap, int slot, Material material, String roleKey, String displayName, int count) {
+    private static int addRole(WerewolfPlugin plugin, Inventory inv, Map<Integer, String> slotMap, int slot, Material material, String roleKey, int count) {
+        MessageUtil msg = plugin.getMessageUtil();
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ColorUtil.color(displayName));
+            meta.setDisplayName(msg.get("gui-items.role-selector." + roleKey));
             List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.GRAY + "Count: " + ChatColor.WHITE + count);
+            lore.add(msg.get("gui-items.role-selector.count", MessageUtil.ph("count", String.valueOf(count))));
             lore.add("");
-            lore.add(ChatColor.YELLOW + "Left-click: " + ChatColor.GREEN + "Add one");
-            lore.add(ChatColor.YELLOW + "Right-click: " + ChatColor.RED + "Remove one");
+            lore.add(msg.get("gui-items.role-selector.left-click-add"));
+            lore.add(msg.get("gui-items.role-selector.right-click-remove"));
             meta.setLore(lore);
             item.setItemMeta(meta);
         }
@@ -111,7 +117,9 @@ public class RoleSelectorGUI {
         sheriffEnabledMap.remove(player);
     }
 
-    public static boolean isRoleSelectorGUI(String title) {
-        return title != null && ChatColor.stripColor(title).startsWith("Role Selector");
+    public static boolean isRoleSelectorGUI(WerewolfPlugin plugin, String title) {
+        if (title == null) return false;
+        String configTitle = ChatColor.stripColor(getTitle(plugin));
+        return ChatColor.stripColor(title).startsWith(configTitle);
     }
 }

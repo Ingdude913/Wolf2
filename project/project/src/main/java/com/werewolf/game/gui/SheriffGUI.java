@@ -3,6 +3,7 @@ package com.werewolf.game.gui;
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.arena.Arena;
 import com.werewolf.game.game.GamePlayer;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -16,12 +17,15 @@ import java.util.Map;
 
 public class SheriffGUI {
 
-    public static final String GUI_TITLE = ChatColor.GOLD + "Sheriff Election - Vote for a Candidate";
-
     private static final Map<Player, Map<Integer, Player>> guiMappings = new HashMap<>();
 
+    public static String getTitle(WerewolfPlugin plugin) {
+        return plugin.getMessageUtil().get("gui.sheriff-title");
+    }
+
     public static void open(WerewolfPlugin plugin, Arena arena, Player voter) {
-        Inventory inv = Bukkit.createInventory(voter, 54, GUI_TITLE);
+        String title = getTitle(plugin);
+        Inventory inv = Bukkit.createInventory(voter, 54, title);
 
         Map<Integer, Player> slotMap = new HashMap<>();
         int slot = 0;
@@ -33,7 +37,7 @@ public class SheriffGUI {
             SkullMeta meta = (SkullMeta) skull.getItemMeta();
             if (meta != null) {
                 meta.setOwningPlayer(gp.getPlayer());
-                meta.setDisplayName(ChatColor.GOLD + gp.getPlayer().getName());
+                meta.setDisplayName(plugin.getMessageUtil().get("gui-items.sheriff-player", MessageUtil.ph("player", gp.getPlayer().getName())));
                 skull.setItemMeta(meta);
             }
             inv.setItem(slot, skull);
@@ -55,7 +59,9 @@ public class SheriffGUI {
         guiMappings.remove(voter);
     }
 
-    public static boolean isSheriffGUI(String title) {
-        return title != null && ChatColor.stripColor(title).startsWith("Sheriff Election");
+    public static boolean isSheriffGUI(WerewolfPlugin plugin, String title) {
+        if (title == null) return false;
+        String configTitle = ChatColor.stripColor(getTitle(plugin));
+        return ChatColor.stripColor(title).startsWith(configTitle);
     }
 }

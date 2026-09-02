@@ -11,6 +11,7 @@ import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.gui.MapSelectorGUI;
 import com.werewolf.game.util.ItemBuilder;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -103,7 +104,7 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "hunter-target")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
-                    player.sendMessage(plugin.prefix() + ChatColor.GOLD + "Right-click a player to select your target.");
+                    player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.hunter-target-hint"));
                 }
                 return;
             }
@@ -111,7 +112,7 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "witch-poison")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
-                    player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "Right-click a player to poison them.");
+                    player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.witch-poison-hint"));
                 }
                 return;
             }
@@ -119,15 +120,15 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "witch-heal")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
-                    player.sendMessage(plugin.prefix() + ChatColor.GREEN + "Right-click a player to heal them.");
+                    player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.witch-heal-hint"));
                 }
                 return;
             }
 
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "role-info-book")) {
                 event.setCancelled(true);
-                player.sendMessage(plugin.prefix() + ChatColor.GOLD + "Your role: " + ChatColor.WHITE + gp.getRole().getName());
-                player.sendMessage(plugin.prefix() + ChatColor.GRAY + gp.getRole().getDescription());
+                player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.role-info", MessageUtil.ph("role", gp.getRole().getName())));
+                player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.role-info-desc", MessageUtil.ph("description", gp.getRole().getDescription())));
                 return;
             }
 
@@ -140,7 +141,7 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "ninja-book")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
-                    NinjaGUI.open(player);
+                    NinjaGUI.open(plugin, player);
                 }
                 return;
             }

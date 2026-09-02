@@ -3,6 +3,7 @@ package com.werewolf.game.arena;
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.game.GamePlayer;
 import com.werewolf.game.game.Phase;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -48,7 +49,7 @@ public class ScoreboardHelper {
             objective.unregister();
         }
         objective = scoreboard.registerNewObjective(LOBBY_OBJ, "dummy",
-                ChatColor.DARK_RED + "" + ChatColor.BOLD + "WEREWOLF");
+                plugin.getMessageUtil().get("scoreboard.title"));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         updateLobby();
     }
@@ -65,36 +66,41 @@ public class ScoreboardHelper {
         int timer = arena.getPhaseTimer();
         Phase phase = arena.getPhase();
 
+        MessageUtil msg = plugin.getMessageUtil();
+
         String status;
         String timerLine;
         if (phase == Phase.LOBBY) {
             if (arena.getTaskId() != -1 && timer > 0) {
-                status = ChatColor.GREEN + "Starting";
-                timerLine = ChatColor.YELLOW + "Starts in: " + ChatColor.WHITE + timer + "s";
+                status = msg.get("scoreboard.lobby.status-starting");
+                timerLine = msg.get("scoreboard.lobby.timer-starts-in",
+                        MessageUtil.ph("timer", String.valueOf(timer)));
             } else {
-                status = ChatColor.YELLOW + "Waiting";
-                timerLine = ChatColor.GRAY + "Waiting for players";
+                status = msg.get("scoreboard.lobby.status-waiting");
+                timerLine = msg.get("scoreboard.lobby.timer-waiting");
             }
         } else {
-            status = ChatColor.RED + "In Game";
-            timerLine = ChatColor.GRAY + "Game in progress";
+            status = msg.get("scoreboard.lobby.status-in-game");
+            timerLine = msg.get("scoreboard.lobby.timer-in-progress");
         }
 
         clearEntries();
 
-        objective.setDisplayName(ChatColor.DARK_RED + "" + ChatColor.BOLD + "WEREWOLF");
+        objective.setDisplayName(msg.get("scoreboard.title"));
 
         int line = 15;
-        setLine(line--, ChatColor.DARK_RED + " ");
-        setLine(line--, ChatColor.RED + "Arena: " + ChatColor.WHITE + arena.getName());
-        setLine(line--, ChatColor.RED + "Players: " + ChatColor.WHITE + size + "/" + max);
-        setLine(line--, ChatColor.RED + "Status: " + status);
-        setLine(line--, ChatColor.RED + " ");
+        setLine(line--, msg.get("scoreboard.lobby.separator-1"));
+        setLine(line--, msg.get("scoreboard.lobby.arena",
+                MessageUtil.ph("name", arena.getName())));
+        setLine(line--, msg.get("scoreboard.lobby.players",
+                MessageUtil.ph("count", String.valueOf(size), "max", String.valueOf(max))));
+        setLine(line--, msg.get("scoreboard.lobby.separator-2"));
         setLine(line--, timerLine);
-        setLine(line--, ChatColor.RED + "Min: " + ChatColor.WHITE + min + " players");
-        setLine(line--, ChatColor.DARK_RED + " ");
-        setLine(line--, ChatColor.GRAY + "Use " + ChatColor.WHITE + "/ww join");
-        setLine(line--, ChatColor.DARK_GRAY + "play.werewolf.net");
+        setLine(line--, msg.get("scoreboard.lobby.min-players",
+                MessageUtil.ph("min", String.valueOf(min))));
+        setLine(line--, msg.get("scoreboard.lobby.separator-3"));
+        setLine(line--, msg.get("scoreboard.lobby.join-hint"));
+        setLine(line--, msg.get("scoreboard.lobby.server-ip"));
 
         applyToPlayers();
     }
@@ -104,7 +110,7 @@ public class ScoreboardHelper {
             objective.unregister();
         }
         objective = scoreboard.registerNewObjective(GAME_OBJ, "dummy",
-                ChatColor.DARK_RED + "" + ChatColor.BOLD + "WEREWOLF");
+                plugin.getMessageUtil().get("scoreboard.title"));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         updateGame();
     }
@@ -120,54 +126,62 @@ public class ScoreboardHelper {
         int alive = arena.getAlivePlayers().size();
         int dead = arena.getDeadPlayers().size();
 
+        MessageUtil msg = plugin.getMessageUtil();
+
         String phaseName;
         ChatColor phaseColor;
         if (phase == Phase.SHERIFF_ELECTION) {
-            phaseName = "Election";
+            phaseName = msg.raw("scoreboard.game.phase-election");
             phaseColor = ChatColor.GOLD;
         } else if (phase == Phase.DAY) {
-            phaseName = "Day";
+            phaseName = msg.raw("scoreboard.game.phase-day");
             phaseColor = ChatColor.GOLD;
         } else if (phase == Phase.NIGHT) {
-            phaseName = "Night";
+            phaseName = msg.raw("scoreboard.game.phase-night");
             phaseColor = ChatColor.DARK_PURPLE;
         } else {
-            phaseName = "Ended";
+            phaseName = msg.raw("scoreboard.game.phase-ended");
             phaseColor = ChatColor.RED;
         }
 
+        String colorStr = phaseColor.toString();
+
         clearEntries();
 
-        objective.setDisplayName(phaseColor + "" + ChatColor.BOLD + phaseName.toUpperCase());
+        objective.setDisplayName(msg.get("scoreboard.title"));
 
         int line = 15;
-        setLine(line--, ChatColor.DARK_RED + " ");
-        setLine(line--, phaseColor + "Phase: " + ChatColor.WHITE + phaseName);
-        setLine(line--, phaseColor + "Time: " + ChatColor.WHITE + Math.max(0, timer) + "s");
-        setLine(line--, ChatColor.RED + " ");
-        setLine(line--, ChatColor.GREEN + "Alive: " + ChatColor.WHITE + alive);
-        setLine(line--, ChatColor.RED + "Dead: " + ChatColor.WHITE + dead);
-        setLine(line--, ChatColor.DARK_RED + " ");
+        setLine(line--, msg.get("scoreboard.game.separator-1"));
+        setLine(line--, msg.get("scoreboard.game.phase-label",
+                MessageUtil.ph("color", colorStr, "phase", phaseName)));
+        setLine(line--, msg.get("scoreboard.game.timer-label",
+                MessageUtil.ph("color", colorStr, "timer", String.valueOf(Math.max(0, timer)))));
+        setLine(line--, msg.get("scoreboard.game.separator-2"));
+        setLine(line--, msg.get("scoreboard.game.alive",
+                MessageUtil.ph("alive", String.valueOf(alive))));
+        setLine(line--, msg.get("scoreboard.game.dead",
+                MessageUtil.ph("dead", String.valueOf(dead))));
+        setLine(line--, msg.get("scoreboard.game.separator-3"));
 
         if (phase == Phase.DAY) {
-            setLine(line--, ChatColor.GOLD + "" + ChatColor.BOLD + "Votes:");
+            setLine(line--, msg.get("scoreboard.game.votes-header"));
             if (voteCounts.isEmpty()) {
-                setLine(line--, ChatColor.GRAY + "No votes yet");
+                setLine(line--, msg.get("scoreboard.game.votes-none"));
             } else {
                 int voteShown = 0;
                 for (Map.Entry<UUID, Integer> entry : voteCounts.entrySet()) {
                     if (voteShown >= 5) break;
                     org.bukkit.entity.Player voted = Bukkit.getPlayer(entry.getKey());
                     if (voted != null) {
-                        setLine(line--, ChatColor.YELLOW + voted.getName() + ": " + ChatColor.RED + entry.getValue());
+                        setLine(line--, msg.get("scoreboard.game.vote-line",
+                                MessageUtil.ph("player", voted.getName(), "votes", String.valueOf(entry.getValue()))));
                         voteShown++;
                     }
                 }
             }
-            setLine(line--, ChatColor.RED + " ");
         }
 
-        setLine(line--, ChatColor.DARK_GRAY + "play.werewolf.net");
+        setLine(line--, msg.get("scoreboard.game.server-ip"));
 
         applyToPlayers();
     }

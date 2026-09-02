@@ -3,6 +3,7 @@ package com.werewolf.game.gui;
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.arena.Arena;
 import com.werewolf.game.game.GamePlayer;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -17,22 +18,36 @@ import java.util.Map;
 
 public class CupidGUI {
 
-    public static final String GUI_TITLE = ChatColor.LIGHT_PURPLE + "Cupid - Select Spouses";
-
     private static final Map<Player, Map<Integer, Player>> guiMappings = new HashMap<>();
 
+    public static String getTitle(WerewolfPlugin plugin) {
+        return plugin.getMessageUtil().get("gui.cupid-title");
+    }
+
     public static void open(WerewolfPlugin plugin, Arena arena, Player cupid) {
-        Inventory inv = Bukkit.createInventory(cupid, 54, GUI_TITLE);
+        String title = getTitle(plugin);
+        Inventory inv = Bukkit.createInventory(cupid, 54, title);
 
         Map<Integer, Player> slotMap = new HashMap<>();
         int slot = 0;
+
+        GamePlayer cupidGp = arena.getGamePlayer(cupid);
+        CupidRole cupidRole = cupidGp != null ? cupidGp.asCupid() : null;
+        Player selected1 = cupidRole != null ? cupidRole.getSpouse1() : null;
+        Player selected2 = cupidRole != null ? cupidRole.getSpouse2() : null;
 
         for (GamePlayer gp : arena.getAlivePlayers()) {
             ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
             SkullMeta meta = (SkullMeta) skull.getItemMeta();
             if (meta != null) {
                 meta.setOwningPlayer(gp.getPlayer());
-                meta.setDisplayName(ChatColor.LIGHT_PURPLE + gp.getPlayer().getName());
+                boolean isSelected = (selected1 != null && gp.getPlayer().getUniqueId().equals(selected1.getUniqueId()))
+                        || (selected2 != null && gp.getPlayer().getUniqueId().equals(selected2.getUniqueId()));
+                if (isSelected) {
+                    meta.setDisplayName(plugin.getMessageUtil().get("gui-items.cupid-player-selected", MessageUtil.ph("player", gp.getPlayer().getName())));
+                } else {
+                    meta.setDisplayName(plugin.getMessageUtil().get("gui-items.cupid-player", MessageUtil.ph("player", gp.getPlayer().getName())));
+                }
                 skull.setItemMeta(meta);
             }
             inv.setItem(slot, skull);
@@ -54,7 +69,9 @@ public class CupidGUI {
         guiMappings.remove(cupid);
     }
 
-    public static boolean isCupidGUI(String title) {
-        return title != null && ChatColor.stripColor(title).startsWith("Cupid - Select Spouses");
+    public static boolean isCupidGUI(WerewolfPlugin plugin, String title) {
+        if (title == null) return false;
+        String configTitle = ChatColor.stripColor(getTitle(plugin));
+        return ChatColor.stripColor(title).startsWith(configTitle);
     }
 }

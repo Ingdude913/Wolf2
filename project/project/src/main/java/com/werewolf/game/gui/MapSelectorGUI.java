@@ -2,6 +2,7 @@ package com.werewolf.game.gui;
 
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.arena.Arena;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -17,17 +18,21 @@ import java.util.Map;
 
 public class MapSelectorGUI {
 
-    public static final String GUI_TITLE = ChatColor.DARK_AQUA + "Map Selector - Vote for a Map";
-
     private static final Map<Player, Map<Integer, String>> guiMappings = new HashMap<>();
 
+    public static String getTitle(WerewolfPlugin plugin) {
+        return plugin.getMessageUtil().get("gui.map-selector-title");
+    }
+
     public static void open(WerewolfPlugin plugin, Arena arena, Player player) {
+        MessageUtil msg = plugin.getMessageUtil();
         List<String> worlds = plugin.getArenaManager().getAvailableWorlds();
         int size = ((worlds.size() / 9) + 1) * 9;
         if (size < 9) size = 9;
         if (size > 54) size = 54;
 
-        Inventory inv = Bukkit.createInventory(player, size, GUI_TITLE);
+        String title = getTitle(plugin);
+        Inventory inv = Bukkit.createInventory(player, size, title);
         Map<Integer, String> slotMap = new HashMap<>();
 
         Map<String, Integer> voteCounts = new HashMap<>();
@@ -44,17 +49,17 @@ public class MapSelectorGUI {
             if (meta != null) {
                 boolean isVoted = world.equals(playerVote);
                 if (isVoted) {
-                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + world + " (Voted)");
+                    meta.setDisplayName(msg.get("gui-items.map-world-voted", MessageUtil.ph("world", world)));
                 } else {
-                    meta.setDisplayName(ChatColor.YELLOW + world);
+                    meta.setDisplayName(msg.get("gui-items.map-world", MessageUtil.ph("world", world)));
                 }
                 List<String> lore = new ArrayList<>();
                 int votes = voteCounts.getOrDefault(world, 0);
-                lore.add(ChatColor.GRAY + "Votes: " + ChatColor.WHITE + votes);
+                lore.add(msg.get("gui-items.map-votes", MessageUtil.ph("votes", String.valueOf(votes))));
                 if (isVoted) {
-                    lore.add(ChatColor.GREEN + "You voted for this map!");
+                    lore.add(msg.get("gui-items.map-voted-yes"));
                 } else {
-                    lore.add(ChatColor.YELLOW + "Click to vote for this map");
+                    lore.add(msg.get("gui-items.map-voted-no"));
                 }
                 meta.setLore(lore);
                 item.setItemMeta(meta);
@@ -68,10 +73,10 @@ public class MapSelectorGUI {
             ItemStack empty = new ItemStack(Material.BARRIER);
             ItemMeta meta = empty.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(ChatColor.RED + "No maps available");
+                meta.setDisplayName(msg.get("gui-items.map-no-maps"));
                 List<String> lore = new ArrayList<>();
-                lore.add(ChatColor.GRAY + "Add world folders to");
-                lore.add(ChatColor.GRAY + "plugins/Werewolf/World/");
+                lore.add(msg.get("gui-items.map-no-maps-lore-1"));
+                lore.add(msg.get("gui-items.map-no-maps-lore-2"));
                 meta.setLore(lore);
                 empty.setItemMeta(meta);
             }
@@ -92,7 +97,9 @@ public class MapSelectorGUI {
         guiMappings.remove(player);
     }
 
-    public static boolean isMapSelectorGUI(String title) {
-        return title != null && ChatColor.stripColor(title).startsWith("Map Selector");
+    public static boolean isMapSelectorGUI(WerewolfPlugin plugin, String title) {
+        if (title == null) return false;
+        String configTitle = ChatColor.stripColor(getTitle(plugin));
+        return ChatColor.stripColor(title).startsWith(configTitle);
     }
 }

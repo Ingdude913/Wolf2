@@ -5,7 +5,6 @@ import com.werewolf.game.arena.Arena;
 import com.werewolf.game.game.GamePlayer;
 import com.werewolf.game.game.Phase;
 import com.werewolf.game.util.ItemBuilder;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -31,13 +30,11 @@ public class PlayerDamageListener implements Listener {
         GamePlayer gp = arena.getGamePlayer(player);
         if (gp == null) return;
 
-        // Block all non-player environmental damage completely
         if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) {
             event.setCancelled(true);
             return;
         }
 
-        // Set player hit damage to 0.0 to allow knockback and animations without losing health
         event.setDamage(0.0);
     }
 
@@ -63,10 +60,8 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
-        // Set baseline attack damage to 0.0 instead of cancelling
         event.setDamage(0.0);
 
-        // Day Phase Interactions (Voting)
         if (arena.getPhase() == Phase.DAY) {
             if (ItemBuilder.isItemKey(plugin, attacker.getInventory().getItemInMainHand(), "vote-sword")) {
                 arena.castVote(attacker, target);
@@ -74,14 +69,12 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
-        // Night Phase Interactions (Role Abilities)
         if (arena.getPhase() == Phase.NIGHT) {
             if (ItemBuilder.isItemKey(plugin, attacker.getInventory().getItemInMainHand(), "werewolf-axe")) {
                 if (attackerGp.getRole().isWerewolf()) {
-                    // event.setCancelled(true) removed; damage is set to 0.0 above
                     arena.werewolfKill(attacker, target);
                 } else if (attackerGp.getRole().isTrickster()) {
-                    attacker.sendMessage(plugin.prefix() + ChatColor.RED + "Your axe is fake! It cannot kill.");
+                    attacker.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.werewolf-axe-fake"));
                 }
                 return;
             }

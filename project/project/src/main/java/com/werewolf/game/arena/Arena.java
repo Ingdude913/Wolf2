@@ -8,6 +8,7 @@ import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.roles.*;
 import com.werewolf.game.util.ColorUtil;
 import com.werewolf.game.util.ItemBuilder;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -97,6 +98,10 @@ public class Arena {
         roleSelection.put("villager", 1);
     }
 
+    private MessageUtil msg() {
+        return plugin.getMessageUtil();
+    }
+
     public int getMinPlayers() {
         return minPlayers;
     }
@@ -179,11 +184,11 @@ public class Arena {
 
     public void addPlayer(Player player) {
         if (isPlayerInArena(player)) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You are already in the game!");
+            player.sendMessage(plugin.prefix() + msg().get("game.already-in"));
             return;
         }
         if (isFull()) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "The game is full!");
+            player.sendMessage(plugin.prefix() + msg().get("game.full"));
             return;
         }
 
@@ -191,8 +196,8 @@ public class Arena {
         players.add(gp);
 
         if (phase == Phase.LOBBY) {
-            player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You joined the game!");
-            broadcast(ChatColor.GREEN + player.getName() + " joined the game! (" + players.size() + "/" + 16 + ")");
+            player.sendMessage(plugin.prefix() + msg().get("game.join"));
+            broadcast(msg().get("game.join-broadcast", MessageUtil.ph("player", player.getName(), "count", String.valueOf(players.size()), "max", "16")));
 
             Location lobby = plugin.getArenaManager().getGlobalLobby();
             if (lobby != null) {
@@ -221,8 +226,8 @@ public class Arena {
             }
         } else {
             gp.setAlive(false);
-            player.sendMessage(plugin.prefix() + ChatColor.YELLOW + "A game is already in progress. You are spectating!");
-            broadcast(ChatColor.YELLOW + player.getName() + " joined as a spectator.");
+            player.sendMessage(plugin.prefix() + msg().get("game.spectator-join"));
+            broadcast(msg().get("game.spectator-broadcast", MessageUtil.ph("player", player.getName())));
 
             if (spawnLocation != null) {
                 player.teleport(spawnLocation);
@@ -259,11 +264,11 @@ public class Arena {
             player.teleport(player.getWorld().getSpawnLocation());
         }
 
-        broadcast(ChatColor.YELLOW + player.getName() + " left the game! (" + players.size() + "/" + 16 + ")");
+        broadcast(msg().get("game.leave-broadcast", MessageUtil.ph("player", player.getName(), "count", String.valueOf(players.size()), "max", "16")));
 
         if (phase == Phase.LOBBY && taskId != -1 && players.size() < minPlayers) {
             cancelTask();
-            broadcast(ChatColor.RED + "Not enough players. Countdown cancelled.");
+            broadcast(msg().get("game.countdown-cancelled"));
         }
 
         if (phase == Phase.LOBBY) {
@@ -280,7 +285,7 @@ public class Arena {
 
     private void startLobbyCountdown() {
         phaseTimer = lobbyDuration;
-        broadcast(ChatColor.GREEN + "Minimum players reached! Game starting in " + lobbyDuration + " seconds.");
+        broadcast(msg().get("game.min-reached", MessageUtil.ph("seconds", String.valueOf(lobbyDuration))));
 
         taskId = new BukkitRunnable() {
             @Override
@@ -288,7 +293,7 @@ public class Arena {
                 if (players.size() < minPlayers) {
                     cancelTask();
                     taskId = -1;
-                    broadcast(ChatColor.RED + "Not enough players. Countdown cancelled.");
+                    broadcast(msg().get("game.countdown-cancelled"));
                     scoreboardHelper.updateLobby();
                     return;
                 }
@@ -299,7 +304,7 @@ public class Arena {
                     return;
                 }
                 if (phaseTimer <= 10 || phaseTimer % 30 == 0) {
-                    broadcast(ChatColor.GOLD + "Game starting in " + phaseTimer + " seconds!");
+                    broadcast(msg().get("game.countdown-broadcast", MessageUtil.ph("seconds", String.valueOf(phaseTimer))));
                 }
                 scoreboardHelper.updateLobby();
                 phaseTimer--;
@@ -309,10 +314,10 @@ public class Arena {
 
     private void startCountdownTitle() {
         final int[] count = {3};
-        broadcast(ChatColor.GOLD + "Game starting!");
+        broadcast(msg().get("game.countdown-broadcast-title"));
         for (GamePlayer gp : players) {
             Player p = gp.getPlayer();
-            p.sendTitle(ChatColor.GOLD + "" + count[0], "", 0, 20, 0);
+            p.sendTitle(msg().get("game.countdown-title", MessageUtil.ph("count", String.valueOf(count[0]))), "", 0, 20, 0);
         }
         new BukkitRunnable() {
             @Override
@@ -321,7 +326,7 @@ public class Arena {
                 if (count[0] > 0) {
                     for (GamePlayer gp : players) {
                         Player p = gp.getPlayer();
-                        p.sendTitle(ChatColor.GOLD + "" + count[0], "", 0, 20, 0);
+                        p.sendTitle(msg().get("game.countdown-title", MessageUtil.ph("count", String.valueOf(count[0]))), "", 0, 20, 0);
                     }
                 } else {
                     cancel();
@@ -340,14 +345,14 @@ public class Arena {
             p.setGameMode(GameMode.ADVENTURE);
             p.setHealth(20);
             p.setFoodLevel(20);
-            p.sendMessage(plugin.prefix() + ChatColor.GOLD + "Your role: " + ChatColor.WHITE + gp.getRole().getName());
-            p.sendMessage(plugin.prefix() + ChatColor.GRAY + gp.getRole().getDescription());
+            p.sendMessage(plugin.prefix() + msg().get("game.role-assigned", MessageUtil.ph("role", gp.getRole().getName())));
+            p.sendMessage(plugin.prefix() + msg().get("game.role-description", MessageUtil.ph("description", gp.getRole().getDescription())));
         }
         startParticleTask();
         if (sheriffEnabled) {
             startSheriffElection();
         } else {
-            broadcast(ChatColor.YELLOW + "Sheriff election is disabled. The game goes straight to day!");
+            broadcast(msg().get("game.sheriff-disabled-skip"));
             firstDay = true;
             giveDayItems();
             scoreboardHelper.setupGame();
@@ -362,9 +367,9 @@ public class Arena {
         phase = Phase.SHERIFF_ELECTION;
         phaseTimer = electionDuration;
         setWorldTime(6000);
-        broadcast(ChatColor.GOLD + "===== SHERIFF ELECTION =====");
-        broadcast(ChatColor.YELLOW + "Vote for who should become the Sheriff! The Sheriff gets 2 votes during daytime voting.");
-        broadcast(ChatColor.YELLOW + "Right-click the Vote Sheriff item to open the voting menu.");
+        broadcast(msg().get("game.sheriff-header"));
+        broadcast(msg().get("game.sheriff-instruct-1"));
+        broadcast(msg().get("game.sheriff-instruct-2"));
 
         for (GamePlayer gp : getAlivePlayers()) {
             Player p = gp.getPlayer();
@@ -374,7 +379,7 @@ public class Arena {
             giveInfoItems(gp);
         }
 
-        createBossBar(ChatColor.GOLD + "Sheriff Election", BarColor.YELLOW);
+        createBossBar(msg().get("game.boss-bar-election"), BarColor.YELLOW);
         scoreboardHelper.setupGame();
 
         taskId = new BukkitRunnable() {
@@ -387,7 +392,7 @@ public class Arena {
                     return;
                 }
                 if (phaseTimer == 30 || phaseTimer == 10 || phaseTimer <= 5) {
-                    broadcast(ChatColor.GOLD + "Sheriff election ends in " + phaseTimer + " seconds!");
+                    broadcast(msg().get("game.sheriff-timer", MessageUtil.ph("seconds", String.valueOf(phaseTimer))));
                 }
                 updateBossBar();
                 scoreboardHelper.updateGame();
@@ -412,7 +417,7 @@ public class Arena {
         sheriffElectionVotes.clear();
 
         if (tie || electedId == null || maxVotes == 0) {
-            broadcast(ChatColor.YELLOW + "The sheriff election was tied or no votes were cast. No sheriff elected.");
+            broadcast(msg().get("game.sheriff-tie"));
         } else {
             Player sheriff = Bukkit.getPlayer(electedId);
             if (sheriff != null) {
@@ -420,15 +425,15 @@ public class Arena {
                 if (sheriffGp != null) {
                     sheriffGp.setSheriff(true);
                     sheriffId = electedId;
-                    broadcast(ChatColor.GOLD + "===== SHERIFF ELECTED =====");
-                    broadcast(ChatColor.YELLOW + sheriff.getName() + " is now the Sheriff! They have 2 votes during daytime voting.");
-                    sheriff.sendMessage(plugin.prefix() + ChatColor.GOLD + "You are the Sheriff! Your votes count as 2 during daytime voting.");
+                    broadcast(msg().get("game.sheriff-elected-header"));
+                    broadcast(msg().get("game.sheriff-elected", MessageUtil.ph("player", sheriff.getName())));
+                    sheriff.sendMessage(plugin.prefix() + msg().get("game.sheriff-you"));
                 }
             }
         }
 
         firstDay = true;
-        broadcast(ChatColor.GREEN + "The game has begun! It is DAY time. Discuss and get to know each other!");
+        broadcast(msg().get("game.game-started"));
         giveDayItems();
         scoreboardHelper.updateGame();
         for (GamePlayer gp : getAlivePlayers()) {
@@ -443,18 +448,18 @@ public class Arena {
         if (voterGp == null || targetGp == null) return;
         if (phase != Phase.SHERIFF_ELECTION) return;
         if (!voterGp.isAlive() || !targetGp.isAlive()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "Dead players cannot vote or be voted.");
+            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-dead-vote"));
             return;
         }
         if (voterGp.hasVoted()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "You have already voted! Right-click the Vote Sheriff item to change your vote.");
+            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-already-voted"));
             return;
         }
         voterGp.setVoted(true);
         voterGp.setVotedFor(target);
         sheriffElectionVotes.merge(target.getUniqueId(), 1, Integer::sum);
-        voter.sendMessage(plugin.prefix() + ChatColor.GREEN + "You voted for " + ChatColor.GOLD + target.getName() + ChatColor.GREEN + " for Sheriff!");
-        broadcast(ChatColor.YELLOW + voter.getName() + " has voted in the sheriff election.");
+        voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
+        broadcast(msg().get("game.sheriff-vote-broadcast", MessageUtil.ph("player", voter.getName())));
     }
 
     public void revokeSheriffVote(Player voter) {
@@ -462,7 +467,7 @@ public class Arena {
         if (voterGp == null || !voterGp.isAlive()) return;
         if (phase != Phase.SHERIFF_ELECTION) return;
         if (!voterGp.hasVoted()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "You haven't voted yet!");
+            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-not-voted"));
             return;
         }
         Player target = voterGp.getVotedFor();
@@ -473,7 +478,7 @@ public class Arena {
             }
         }
         voterGp.resetVote();
-        voter.sendMessage(plugin.prefix() + ChatColor.GREEN + "Your sheriff election vote has been revoked.");
+        voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-revoke"));
     }
 
     public Map<String, Integer> getRoleSelection() {
@@ -490,7 +495,7 @@ public class Arena {
     }
 
     public void openRoleSelector(Player player) {
-        RoleSelectorGUI.open(player, roleSelection, sheriffEnabled);
+        RoleSelectorGUI.open(plugin, player, roleSelection, sheriffEnabled);
     }
 
     public boolean isSheriffEnabled() {
@@ -579,7 +584,7 @@ public class Arena {
         for (GamePlayer gp : players) {
             if (gp.getRole().canSeeWerewolves()) {
                 Player p = gp.getPlayer();
-                p.sendMessage(plugin.prefix() + ChatColor.RED + "Werewolves (your team): " + ChatColor.WHITE + String.join(", ", werewolfNames));
+                p.sendMessage(plugin.prefix() + msg().get("game.wolf-team-list", MessageUtil.ph("names", String.join(", ", werewolfNames))));
             }
         }
 
@@ -604,7 +609,7 @@ public class Arena {
         if (selectedWorld.equals(worldName) && spawnLocation != null) return;
         World world = plugin.getArenaManager().getWorldManager().loadWorld(selectedWorld);
         if (world == null) {
-            broadcast(ChatColor.RED + "Failed to load map '" + selectedWorld + "'! Using default world.");
+            broadcast(msg().get("game.map-failed", MessageUtil.ph("world", selectedWorld)));
             return;
         }
         worldName = selectedWorld;
@@ -615,7 +620,7 @@ public class Arena {
         } else {
             spawnLocation = world.getSpawnLocation();
         }
-        broadcast(ChatColor.GREEN + "Map selected: " + ChatColor.GOLD + selectedWorld);
+        broadcast(msg().get("game.map-selected", MessageUtil.ph("world", selectedWorld)));
     }
 
     private String getSelectedMap() {
@@ -644,17 +649,17 @@ public class Arena {
         GamePlayer gp = getGamePlayer(player);
         if (gp == null || !gp.isAlive()) return;
         if (phase != Phase.LOBBY) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You can only vote for a map in the lobby!");
+            player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-lobby"));
             return;
         }
         List<String> available = plugin.getArenaManager().getAvailableWorlds();
         if (!available.contains(worldName)) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "That map is not available!");
+            player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-available"));
             return;
         }
         mapVotes.put(player.getUniqueId(), worldName);
-        player.sendMessage(plugin.prefix() + ChatColor.GREEN + "You voted for map: " + ChatColor.GOLD + worldName);
-        broadcast(ChatColor.YELLOW + player.getName() + " voted for map " + ChatColor.GOLD + worldName);
+        player.sendMessage(plugin.prefix() + msg().get("game.map-vote-cast", MessageUtil.ph("world", worldName)));
+        broadcast(msg().get("game.map-vote-broadcast", MessageUtil.ph("player", player.getName(), "world", worldName)));
     }
 
     public String getPlayerMapVote(Player player) {
@@ -710,7 +715,7 @@ public class Arena {
         }
         particleTrailPlayers.clear();
 
-        createBossBar(ChatColor.GOLD + "Day Time", BarColor.YELLOW);
+        createBossBar(msg().get("game.boss-bar-day"), BarColor.YELLOW);
         startActionBar();
 
         taskId = new BukkitRunnable() {
@@ -723,7 +728,7 @@ public class Arena {
                     return;
                 }
                 if (phaseTimer == 30 || phaseTimer == 10 || phaseTimer <= 5) {
-                    broadcast(ChatColor.GOLD + "Day ends in " + phaseTimer + " seconds!");
+                    broadcast(msg().get("game.day-ends-in", MessageUtil.ph("seconds", String.valueOf(phaseTimer))));
                 }
                 updateBossBar();
                 scoreboardHelper.updateGame();
@@ -748,7 +753,7 @@ public class Arena {
         fakeVoteCounts.clear();
         scoreboardHelper.updateVotes(voteCounts);
         if (voteCounts.isEmpty()) {
-            broadcast(ChatColor.YELLOW + "No votes were cast. No one is eliminated.");
+            broadcast(msg().get("game.no-votes"));
             return;
         }
         UUID mostVoted = null;
@@ -769,7 +774,7 @@ public class Arena {
         }
         scoreboardHelper.updateVotes(voteCounts);
         if (tie || mostVoted == null) {
-            broadcast(ChatColor.YELLOW + "The vote was tied. No one is eliminated.");
+            broadcast(msg().get("game.vote-tied"));
             return;
         }
         Player eliminated = Bukkit.getPlayer(mostVoted);
@@ -777,9 +782,9 @@ public class Arena {
         GamePlayer gp = getGamePlayer(eliminated);
         if (gp == null || !gp.isAlive()) return;
         if (gp.getRole().isMasochist() && !debugMode) {
-            broadcast(ChatColor.GOLD + "===== MASOCHIST WINS =====");
-            broadcast(ChatColor.YELLOW + eliminated.getName() + " received the most votes and was the Masochist! They win!");
-            endGame("Masochist", eliminated.getName() + " (Masochist) received the most votes and wins!");
+            broadcast(msg().get("game.masochist-header"));
+            broadcast(msg().get("game.masochist-win", MessageUtil.ph("player", eliminated.getName())));
+            endGame(msg().get("win.spouses-team"), eliminated.getName() + " (Masochist) " + msg().raw("game.masochist-win", MessageUtil.ph("player", eliminated.getName())));
             return;
         }
         eliminatePlayer(gp, "voted out by the village");
@@ -790,11 +795,11 @@ public class Arena {
         GamePlayer targetGp = getGamePlayer(target);
         if (voterGp == null || targetGp == null) return;
         if (!voterGp.isAlive() || !targetGp.isAlive()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "Dead players cannot vote or be voted.");
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-dead"));
             return;
         }
         if (voterGp.hasVoted()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "You have already voted! Use the Revoke Vote item to change your vote.");
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-already"));
             return;
         }
         if (voterGp.getRole().isMasochist()) {
@@ -802,9 +807,9 @@ public class Arena {
             voterGp.setVotedFor(target);
             voteCounts.merge(target.getUniqueId(), 1, Integer::sum);
             fakeVoteCounts.merge(target.getUniqueId(), 1, Integer::sum);
-            voter.sendMessage(plugin.prefix() + ChatColor.GREEN + "You voted for " + ChatColor.GOLD + target.getName() + ChatColor.GREEN + "!");
-            voter.sendMessage(plugin.prefix() + ChatColor.DARK_GRAY + "Your vote does not count.");
-            broadcast(ChatColor.YELLOW + voter.getName() + " has voted. (" + voteCounts.getOrDefault(target.getUniqueId(), 0) + " votes for " + target.getName() + ")");
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-cast", MessageUtil.ph("target", target.getName())));
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-fake"));
+            broadcast(msg().get("game.vote-broadcast", MessageUtil.ph("player", voter.getName(), "votes", String.valueOf(voteCounts.getOrDefault(target.getUniqueId(), 0)), "target", target.getName())));
             scoreboardHelper.updateVotes(voteCounts);
             return;
         }
@@ -812,8 +817,12 @@ public class Arena {
         voterGp.setVotedFor(target);
         int voteWeight = voterGp.isSheriff() ? 2 : 1;
         voteCounts.merge(target.getUniqueId(), voteWeight, Integer::sum);
-        voter.sendMessage(plugin.prefix() + ChatColor.GREEN + "You voted for " + ChatColor.GOLD + target.getName() + ChatColor.GREEN + "!" + (voterGp.isSheriff() ? ChatColor.GOLD + " (Sheriff: 2 votes)" : ""));
-        broadcast(ChatColor.YELLOW + voter.getName() + " has voted. (" + voteCounts.getOrDefault(target.getUniqueId(), 0) + " votes for " + target.getName() + ")");
+        if (voterGp.isSheriff()) {
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-cast-sheriff", MessageUtil.ph("target", target.getName())));
+        } else {
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-cast", MessageUtil.ph("target", target.getName())));
+        }
+        broadcast(msg().get("game.vote-broadcast", MessageUtil.ph("player", voter.getName(), "votes", String.valueOf(voteCounts.getOrDefault(target.getUniqueId(), 0)), "target", target.getName())));
         scoreboardHelper.updateVotes(voteCounts);
     }
 
@@ -821,7 +830,7 @@ public class Arena {
         GamePlayer voterGp = getGamePlayer(voter);
         if (voterGp == null || !voterGp.isAlive()) return;
         if (!voterGp.hasVoted()) {
-            voter.sendMessage(plugin.prefix() + ChatColor.RED + "You haven't voted yet!");
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-not-voted"));
             return;
         }
         Player target = voterGp.getVotedFor();
@@ -842,7 +851,7 @@ public class Arena {
             }
         }
         voterGp.resetVote();
-        voter.sendMessage(plugin.prefix() + ChatColor.GREEN + "Your vote has been revoked.");
+        voter.sendMessage(plugin.prefix() + msg().get("game.vote-revoked"));
         scoreboardHelper.updateVotes(voteCounts);
     }
 
@@ -864,9 +873,9 @@ public class Arena {
         }
         particleTrailPlayers.clear();
 
-        createBossBar(ChatColor.DARK_PURPLE + "Night Time", BarColor.PURPLE);
+        createBossBar(msg().get("game.boss-bar-night"), BarColor.PURPLE);
 
-        broadcast(ChatColor.DARK_PURPLE + "Night falls! Use your abilities wisely.");
+        broadcast(msg().get("game.night-falls"));
 
         taskId = new BukkitRunnable() {
             @Override
@@ -878,7 +887,7 @@ public class Arena {
                     return;
                 }
                 if (phaseTimer == 30 || phaseTimer == 10 || phaseTimer <= 5) {
-                    broadcast(ChatColor.DARK_PURPLE + "Night ends in " + phaseTimer + " seconds!");
+                    broadcast(msg().get("game.night-ends-in", MessageUtil.ph("seconds", String.valueOf(phaseTimer))));
                 }
                 updateBossBar();
                 scoreboardHelper.updateGame();
@@ -926,7 +935,7 @@ public class Arena {
                 GamePlayer hunterGp = getGamePlayer(hunter);
                 GamePlayer targetGp = getGamePlayer(target);
                 if (hunterGp != null && !hunterGp.isAlive() && targetGp != null && targetGp.isAlive()) {
-                    broadcast(ChatColor.GOLD + "The Hunter's revenge strikes! " + target.getName() + " is killed!");
+                    broadcast(msg().get("game.killed-hunter-revenge", MessageUtil.ph("target", target.getName())));
                     eliminatePlayer(targetGp, "killed by the Hunter's revenge");
                 }
             }
@@ -942,14 +951,14 @@ public class Arena {
         Player p = gp.getPlayer();
         p.setGameMode(GameMode.SPECTATOR);
         p.getInventory().clear();
-        broadcast(ChatColor.RED + p.getName() + " has been " + reason + "!");
+        broadcast(msg().get("game.eliminated", MessageUtil.ph("player", p.getName(), "reason", reason)));
 
         if (gp.getRole() instanceof HunterRole) {
             HunterRole hunter = (HunterRole) gp.getRole();
             Player target = hunter.getTarget();
             if (target != null) {
                 hunterTargets.put(p.getUniqueId(), target.getUniqueId());
-                broadcast(ChatColor.GOLD + "The Hunter " + p.getName() + " had selected " + target.getName() + " as their target!");
+                broadcast(msg().get("game.hunter-target-info", MessageUtil.ph("player", p.getName(), "target", target.getName())));
             }
         }
 
@@ -959,8 +968,8 @@ public class Arena {
             if (partner != null) {
                 GamePlayer partnerGp = getGamePlayer(partner);
                 if (partnerGp != null && partnerGp.isAlive()) {
-                    broadcast(ChatColor.LIGHT_PURPLE + p.getName() + " and " + partner.getName() + " were spouses! " + partner.getName() + " dies of a broken heart!");
-                    eliminatePlayer(partnerGp, "died of a broken heart");
+                    broadcast(msg().get("game.spouse-broken-heart", MessageUtil.ph("player", p.getName(), "partner", partner.getName())));
+                    eliminatePlayer(partnerGp, msg().get("game.spouse-died-broken-heart"));
                 }
             }
             spouses.remove(partnerId);
@@ -975,27 +984,41 @@ public class Arena {
         CupidRole cupidRole = cupidGp.asCupid();
         if (cupidRole == null) return;
         if (cupidRole.hasPaired()) {
-            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You have already paired two spouses!");
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-already-paired"));
             return;
         }
         if (!targetGp.isAlive()) {
-            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You cannot select a dead player as a spouse!");
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-dead-target"));
             return;
         }
+
+        if (cupidRole.getSpouse1() != null && cupidRole.getSpouse1().getUniqueId().equals(target.getUniqueId())) {
+            cupidRole.setSpouse1(null);
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-deselect", MessageUtil.ph("target", target.getName())));
+            com.werewolf.game.gui.CupidGUI.open(plugin, this, cupid);
+            return;
+        }
+        if (cupidRole.getSpouse2() != null && cupidRole.getSpouse2().getUniqueId().equals(target.getUniqueId())) {
+            cupidRole.setSpouse2(null);
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-deselect", MessageUtil.ph("target", target.getName())));
+            com.werewolf.game.gui.CupidGUI.open(plugin, this, cupid);
+            return;
+        }
+
         if (cupidRole.getSpouse1() == null) {
             cupidRole.setSpouse1(target);
-            cupid.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You selected " + target.getName() + " as the first spouse. Select one more player to complete the pair.");
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-first-selected", MessageUtil.ph("target", target.getName())));
             cupid.closeInventory();
             com.werewolf.game.gui.CupidGUI.open(plugin, this, cupid);
             return;
         }
         if (cupidRole.getSpouse2() != null) {
-            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You have already paired two spouses!");
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-already-paired"));
             return;
         }
         Player first = cupidRole.getSpouse1();
         if (target.getUniqueId().equals(first.getUniqueId())) {
-            cupid.sendMessage(plugin.prefix() + ChatColor.RED + "You already selected that player as the first spouse!");
+            cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-already-first"));
             return;
         }
         cupidRole.setSpouse2(target);
@@ -1004,11 +1027,11 @@ public class Arena {
         spouses.put(target.getUniqueId(), first.getUniqueId());
         cupid.getInventory().removeItem(ItemBuilder.create(plugin, "cupid-bow"));
         cupid.closeInventory();
-        broadcast(ChatColor.LIGHT_PURPLE + "===== CUPID'S ARROW =====");
-        broadcast(ChatColor.LIGHT_PURPLE + first.getName() + " and " + target.getName() + " are now spouses! They must stay alive together to win!");
-        first.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You are now spouses with " + target.getName() + "! If one of you dies, the other dies too. Stay alive together to win!");
-        target.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You are now spouses with " + first.getName() + "! If one of you dies, the other dies too. Stay alive together to win!");
-        cupid.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You have paired " + first.getName() + " and " + target.getName() + " as spouses!");
+        broadcast(msg().get("game.cupid-arrow-header"));
+        broadcast(msg().get("game.cupid-arrow-broadcast", MessageUtil.ph("spouse1", first.getName(), "spouse2", target.getName())));
+        first.sendMessage(plugin.prefix() + msg().get("game.cupid-spouse-notify", MessageUtil.ph("partner", target.getName())));
+        target.sendMessage(plugin.prefix() + msg().get("game.cupid-spouse-notify", MessageUtil.ph("partner", first.getName())));
+        cupid.sendMessage(plugin.prefix() + msg().get("game.cupid-paired-self", MessageUtil.ph("spouse1", first.getName(), "spouse2", target.getName())));
     }
 
     public void werewolfKill(Player killer, Player target) {
@@ -1018,11 +1041,11 @@ public class Arena {
         if (!killerGp.getRole().isWerewolf()) return;
         if (!killerGp.isAlive() || !targetGp.isAlive()) return;
         if (targetGp.getRole().isWerewolf()) {
-            killer.sendMessage(plugin.prefix() + ChatColor.RED + "You cannot kill a fellow werewolf!");
+            killer.sendMessage(plugin.prefix() + msg().get("game.werewolf-cannot-kill-wolf"));
             return;
         }
         eliminatePlayer(targetGp, "killed by a werewolf");
-        killer.sendMessage(plugin.prefix() + ChatColor.RED + "You have killed " + target.getName() + "!");
+        killer.sendMessage(plugin.prefix() + msg().get("game.killed-werewolf", MessageUtil.ph("target", target.getName())));
         checkWinCondition();
     }
 
@@ -1033,13 +1056,13 @@ public class Arena {
         WitchRole witchRole = witchGp.asWitch();
         if (witchRole == null) return;
         if (witchRole.isPoisonUsed()) {
-            witch.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used your poison!");
+            witch.sendMessage(plugin.prefix() + msg().get("game.witch-poison-used"));
             return;
         }
         witchRole.usePoison();
         addNightDeath(targetGp);
         witch.getInventory().removeItem(ItemBuilder.create(plugin, "witch-poison"));
-        witch.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You used your poison on " + target.getName() + "!");
+        witch.sendMessage(plugin.prefix() + msg().get("game.witch-poison-success", MessageUtil.ph("target", target.getName())));
     }
 
     public void witchHeal(Player witch, Player target) {
@@ -1049,14 +1072,14 @@ public class Arena {
         WitchRole witchRole = witchGp.asWitch();
         if (witchRole == null) return;
         if (witchRole.isHealUsed()) {
-            witch.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used your heal!");
+            witch.sendMessage(plugin.prefix() + msg().get("game.witch-heal-used"));
             return;
         }
         witchRole.useHeal();
         pendingNightDeaths.remove(targetGp);
         target.setHealth(20);
         witch.getInventory().removeItem(ItemBuilder.create(plugin, "witch-heal"));
-        witch.sendMessage(plugin.prefix() + ChatColor.GREEN + "You healed " + target.getName() + "!");
+        witch.sendMessage(plugin.prefix() + msg().get("game.witch-heal-success", MessageUtil.ph("target", target.getName())));
     }
 
     public void seerCheck(Player seer, Player target) {
@@ -1066,20 +1089,20 @@ public class Arena {
         SeerRole seerRole = seerGp.asSeer();
         if (seerRole == null) return;
         if (seerRole.hasCheckedTonight()) {
-            seer.sendMessage(plugin.prefix() + ChatColor.RED + "You have already checked a player tonight!");
+            seer.sendMessage(plugin.prefix() + msg().get("game.seer-already-checked"));
             return;
         }
         seerRole.setCheckedTonight(true);
         Team team = targetGp.getRole().getTeam();
         String teamName;
         if (targetGp.getRole().isTrickster()) {
-            teamName = ChatColor.RED + "BAD";
+            teamName = msg().get("game.seer-team-bad");
         } else if (team == Team.BAD) {
-            teamName = ChatColor.RED + "BAD";
+            teamName = msg().get("game.seer-team-bad");
         } else {
-            teamName = ChatColor.GREEN + "GOOD";
+            teamName = msg().get("game.seer-team-good");
         }
-        seer.sendMessage(plugin.prefix() + ChatColor.BLUE + target.getName() + " is on the " + teamName + ChatColor.BLUE + " team.");
+        seer.sendMessage(plugin.prefix() + msg().get("game.seer-result", MessageUtil.ph("target", target.getName(), "team", teamName)));
     }
 
     public void seerLampSwap(Player seer) {
@@ -1088,7 +1111,7 @@ public class Arena {
         SeerRole seerRole = seerGp.asSeer();
         if (seerRole == null) return;
         if (seerRole.hasUsedLampTonight()) {
-            seer.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used the Lamp tonight!");
+            seer.sendMessage(plugin.prefix() + msg().get("game.seer-lamp-used"));
             return;
         }
         Player furthest = null;
@@ -1103,7 +1126,7 @@ public class Arena {
             }
         }
         if (furthest == null) {
-            seer.sendMessage(plugin.prefix() + ChatColor.RED + "No other alive players found!");
+            seer.sendMessage(plugin.prefix() + msg().get("game.seer-lamp-no-target"));
             return;
         }
         seerRole.setUsedLampTonight(true);
@@ -1111,8 +1134,8 @@ public class Arena {
         Location targetLoc = furthest.getLocation().clone();
         seer.teleport(targetLoc);
         furthest.teleport(seerLoc);
-        seer.sendMessage(plugin.prefix() + ChatColor.GOLD + "Lamp to the Slaughter! You swapped positions with " + furthest.getName() + "!");
-        furthest.sendMessage(plugin.prefix() + ChatColor.GOLD + "A mysterious force has swapped your position with someone!");
+        seer.sendMessage(plugin.prefix() + msg().get("game.seer-lamp-success", MessageUtil.ph("target", furthest.getName())));
+        furthest.sendMessage(plugin.prefix() + msg().get("game.seer-lamp-victim"));
     }
 
     public void hunterSelectTarget(Player hunter, Player target) {
@@ -1122,11 +1145,11 @@ public class Arena {
         HunterRole hunterRole = hunterGp.asHunter();
         if (hunterRole == null) return;
         if (hunterRole.isTargetLocked()) {
-            hunter.sendMessage(plugin.prefix() + ChatColor.RED + "Your target is locked for tonight!");
+            hunter.sendMessage(plugin.prefix() + msg().get("game.hunter-target-locked"));
             return;
         }
         hunterRole.setTarget(target);
-        hunter.sendMessage(plugin.prefix() + ChatColor.GOLD + "You selected " + target.getName() + " as your target. If you die, they will die too!");
+        hunter.sendMessage(plugin.prefix() + msg().get("game.hunter-target-set", MessageUtil.ph("target", target.getName())));
     }
 
     public void werewolfTransform(Player player) {
@@ -1149,7 +1172,7 @@ public class Arena {
             gp.setTransformed(false);
             particleTrailPlayers.remove(player.getUniqueId());
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 100, 0, false, false));
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You untransform and vanish briefly!");
+            player.sendMessage(plugin.prefix() + msg().get("game.werewolf-untransform"));
             return;
         }
 
@@ -1174,7 +1197,7 @@ public class Arena {
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
         particleTrailPlayers.add(player.getUniqueId());
         gp.setTransformed(true);
-        player.sendMessage(plugin.prefix() + ChatColor.RED + "You transform into a werewolf!");
+        player.sendMessage(plugin.prefix() + msg().get("game.werewolf-transform"));
     }
 
     private boolean checkWinCondition() {
@@ -1182,7 +1205,7 @@ public class Arena {
         if (players.isEmpty()) return true;
         Set<GamePlayer> alive = getAlivePlayers();
         if (alive.isEmpty()) {
-            endGame("Draw", "Everyone has been eliminated!");
+            endGame(msg().get("win.draw-team"), msg().get("win.draw"));
             return true;
         }
 
@@ -1191,26 +1214,26 @@ public class Arena {
 
         if (!badAlive && !goodAlive) {
             if (areSpousesAlive()) {
-                endGame("Spouses", "All other teams have been eliminated and the spouses are both alive!");
+                endGame(msg().get("win.spouses-team"), msg().get("win.spouses-all-gone"));
                 return true;
             }
-            endGame("Neutral team", "All werewolves and villagers have been eliminated!");
+            endGame(msg().get("win.neutral-team"), msg().get("win.neutral"));
             return true;
         }
         if (!badAlive) {
             if (areSpousesAlive()) {
-                endGame("Spouses", "All werewolves have been eliminated and the spouses are both alive!");
+                endGame(msg().get("win.spouses-team"), msg().get("win.spouses-no-bad"));
                 return true;
             }
-            endGame("Good team", "All werewolves have been eliminated!");
+            endGame(msg().get("win.good-team"), msg().get("win.good"));
             return true;
         }
         if (!goodAlive) {
             if (areSpousesAlive()) {
-                endGame("Spouses", "All villagers have been eliminated and the spouses are both alive!");
+                endGame(msg().get("win.spouses-team"), msg().get("win.spouses-no-good"));
                 return true;
             }
-            endGame("Bad team", "All villagers have been eliminated!");
+            endGame(msg().get("win.bad-team"), msg().get("win.bad"));
             return true;
         }
         return false;
@@ -1238,13 +1261,13 @@ public class Arena {
         removeBossBar();
         stopActionBar();
         stopParticleTask();
-        broadcast(ChatColor.GOLD + "===== GAME OVER =====");
-        broadcast(ChatColor.YELLOW + reason);
-        broadcast(ChatColor.GOLD + "The " + winningTeam + " wins!");
+        broadcast(msg().get("game.game-over-header"));
+        broadcast(msg().get("game.game-over-reason", MessageUtil.ph("reason", reason)));
+        broadcast(msg().get("game.game-over-winner", MessageUtil.ph("winning_team", winningTeam)));
 
         for (GamePlayer gp : players) {
             Player p = gp.getPlayer();
-            p.sendMessage(plugin.prefix() + ChatColor.GRAY + "You were the " + gp.getRole().getName() + ".");
+            p.sendMessage(plugin.prefix() + msg().get("game.your-role-was", MessageUtil.ph("role", gp.getRole().getName())));
             p.setGameMode(GameMode.SURVIVAL);
             p.getInventory().clear();
             p.getInventory().setHelmet(null);
@@ -1286,9 +1309,9 @@ public class Arena {
     }
 
     private void revealAllRoles() {
-        broadcast(ChatColor.GOLD + "===== ROLE REVEAL =====");
+        broadcast(msg().get("game.role-reveal-header"));
         for (GamePlayer gp : players) {
-            broadcast(ChatColor.GRAY + gp.getPlayer().getName() + " was the " + gp.getRole().getName());
+            broadcast(msg().get("game.role-reveal-line", MessageUtil.ph("player", gp.getPlayer().getName(), "role", gp.getRole().getName())));
         }
     }
 
@@ -1330,7 +1353,7 @@ public class Arena {
         cupidId = null;
         phase = Phase.LOBBY;
         scoreboardHelper.setupLobby();
-        broadcast(ChatColor.RED + "The game has been force stopped.");
+        broadcast(msg().get("game.force-stopped"));
 
         for (Player online : Bukkit.getOnlinePlayers()) {
             if (!isPlayerInArena(online)) {
@@ -1356,12 +1379,12 @@ public class Arena {
 
     public void skipDay(Player player) {
         if (phase != Phase.DAY) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You can only skip time during the day!");
+            player.sendMessage(plugin.prefix() + msg().get("game.skip-day-not-day"));
             return;
         }
         int skipAmount = Math.max(1, phaseTimer / 3);
         phaseTimer -= skipAmount;
-        broadcast(ChatColor.AQUA + player.getName() + " skipped " + skipAmount + " seconds! Day ends in " + Math.max(0, phaseTimer) + " seconds.");
+        broadcast(msg().get("game.skip-day-self", MessageUtil.ph("player", player.getName(), "seconds", String.valueOf(skipAmount), "timer", String.valueOf(Math.max(0, phaseTimer)))));
         player.getInventory().removeItem(ItemBuilder.create(plugin, "skip-day"));
         updateBossBar();
         if (phaseTimer <= 0) {
@@ -1374,7 +1397,7 @@ public class Arena {
     public void skipDayFromCommand() {
         if (phase != Phase.DAY) return;
         phaseTimer = 0;
-        broadcast(ChatColor.AQUA + "Admin skipped the remaining day time!");
+        broadcast(msg().get("game.skip-day-admin"));
         updateBossBar();
         cancelTask();
         taskId = -1;
@@ -1384,7 +1407,7 @@ public class Arena {
     public void skipNightFromCommand() {
         if (phase != Phase.NIGHT) return;
         phaseTimer = 0;
-        broadcast(ChatColor.DARK_PURPLE + "Admin skipped the remaining night time!");
+        broadcast(msg().get("game.skip-night-admin"));
         updateBossBar();
         cancelTask();
         taskId = -1;
@@ -1394,7 +1417,7 @@ public class Arena {
     public void skipElectionFromCommand() {
         if (phase != Phase.SHERIFF_ELECTION) return;
         phaseTimer = 0;
-        broadcast(ChatColor.GOLD + "Admin skipped the remaining election time!");
+        broadcast(msg().get("game.skip-election-admin"));
         updateBossBar();
         cancelTask();
         taskId = -1;
@@ -1442,8 +1465,8 @@ public class Arena {
                 return;
         }
         gp.setRole(role);
-        player.sendMessage(plugin.prefix() + ChatColor.GOLD + "Your role has been set to: " + ChatColor.WHITE + role.getName());
-        player.sendMessage(plugin.prefix() + ChatColor.GRAY + role.getDescription());
+        player.sendMessage(plugin.prefix() + msg().get("admin.setrole-notify", MessageUtil.ph("role", role.getName())));
+        player.sendMessage(plugin.prefix() + msg().get("game.role-description", MessageUtil.ph("description", role.getDescription())));
 
         if (phase == Phase.SHERIFF_ELECTION) {
             player.getInventory().clear();
@@ -1466,11 +1489,10 @@ public class Arena {
     }
 
     public void revealRolesToSender(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + "===== ROLE LIST =====");
+        sender.sendMessage(msg().get("admin.reveal-header"));
         for (GamePlayer gp : players) {
-            sender.sendMessage(ChatColor.GRAY + gp.getPlayer().getName() + " - " +
-                    (gp.isAlive() ? ChatColor.GREEN + "ALIVE" : ChatColor.RED + "DEAD") +
-                    ChatColor.GRAY + " - " + ChatColor.WHITE + gp.getRole().getName());
+            String status = gp.isAlive() ? msg().get("admin.reveal-alive") : msg().get("admin.reveal-dead");
+            sender.sendMessage(msg().get("admin.reveal-line", MessageUtil.ph("player", gp.getPlayer().getName(), "status", status, "role", gp.getRole().getName())));
         }
     }
 
@@ -1478,10 +1500,10 @@ public class Arena {
         int total = players.size();
         long werewolves = players.stream().filter(gp -> gp.getRole().isWerewolf()).count();
         long tricksters = players.stream().filter(gp -> gp.getRole().isTrickster()).count();
-        long witches = players.stream().filter(gp -> gp.getRole() instanceof com.werewolf.game.roles.WitchRole).count();
-        long seers = players.stream().filter(gp -> gp.getRole() instanceof com.werewolf.game.roles.SeerRole).count();
-        long hunters = players.stream().filter(gp -> gp.getRole() instanceof com.werewolf.game.roles.HunterRole).count();
-        long villagers = players.stream().filter(gp -> gp.getRole() instanceof com.werewolf.game.roles.VillagerRole).count();
+        long witches = players.stream().filter(gp -> gp.getRole() instanceof WitchRole).count();
+        long seers = players.stream().filter(gp -> gp.getRole() instanceof SeerRole).count();
+        long hunters = players.stream().filter(gp -> gp.getRole() instanceof HunterRole).count();
+        long villagers = players.stream().filter(gp -> gp.getRole() instanceof VillagerRole).count();
         long ninjas = players.stream().filter(gp -> gp.getRole().isNinja()).count();
         long mermaids = players.stream().filter(gp -> gp.getRole().isMermaid()).count();
         long masochists = players.stream().filter(gp -> gp.getRole().isMasochist()).count();
@@ -1490,34 +1512,34 @@ public class Arena {
         int dayDur = plugin.getConfig().getInt("day-duration", 120);
         int nightDur = plugin.getConfig().getInt("night-duration", 60);
 
-        player.sendMessage(plugin.prefix() + ChatColor.DARK_AQUA + "===== Game Setup =====");
-        if (werewolves > 0) player.sendMessage(ChatColor.RED + "Werewolves: " + ChatColor.WHITE + werewolves);
-        if (tricksters > 0) player.sendMessage(ChatColor.GOLD + "Tricksters: " + ChatColor.WHITE + tricksters);
-        if (witches > 0) player.sendMessage(ChatColor.DARK_PURPLE + "Witches: " + ChatColor.WHITE + witches);
-        if (seers > 0) player.sendMessage(ChatColor.BLUE + "Seers: " + ChatColor.WHITE + seers);
-        if (hunters > 0) player.sendMessage(ChatColor.GOLD + "Hunters: " + ChatColor.WHITE + hunters);
-        if (villagers > 0) player.sendMessage(ChatColor.GREEN + "Villagers: " + ChatColor.WHITE + villagers);
-        if (ninjas > 0) player.sendMessage(ChatColor.DARK_PURPLE + "Ninjas: " + ChatColor.WHITE + ninjas);
-        if (mermaids > 0) player.sendMessage(ChatColor.AQUA + "Mermaids: " + ChatColor.WHITE + mermaids);
-        if (masochists > 0) player.sendMessage(ChatColor.DARK_GREEN + "Masochists: " + ChatColor.WHITE + masochists);
-        if (cupids > 0) player.sendMessage(ChatColor.LIGHT_PURPLE + "Cupids: " + ChatColor.WHITE + cupids);
-        player.sendMessage(ChatColor.WHITE + "Total Players: " + ChatColor.WHITE + total);
-        player.sendMessage(ChatColor.YELLOW + "Day Duration: " + ChatColor.WHITE + dayDur + " seconds");
-        player.sendMessage(ChatColor.BLUE + "Night Duration: " + ChatColor.WHITE + nightDur + " seconds");
+        player.sendMessage(plugin.prefix() + msg().get("game.setup-header"));
+        if (werewolves > 0) player.sendMessage(msg().get("game.setup-werewolves", MessageUtil.ph("count", String.valueOf(werewolves))));
+        if (tricksters > 0) player.sendMessage(msg().get("game.setup-tricksters", MessageUtil.ph("count", String.valueOf(tricksters))));
+        if (witches > 0) player.sendMessage(msg().get("game.setup-witches", MessageUtil.ph("count", String.valueOf(witches))));
+        if (seers > 0) player.sendMessage(msg().get("game.setup-seers", MessageUtil.ph("count", String.valueOf(seers))));
+        if (hunters > 0) player.sendMessage(msg().get("game.setup-hunters", MessageUtil.ph("count", String.valueOf(hunters))));
+        if (villagers > 0) player.sendMessage(msg().get("game.setup-villagers", MessageUtil.ph("count", String.valueOf(villagers))));
+        if (ninjas > 0) player.sendMessage(msg().get("game.setup-ninjas", MessageUtil.ph("count", String.valueOf(ninjas))));
+        if (mermaids > 0) player.sendMessage(msg().get("game.setup-mermaids", MessageUtil.ph("count", String.valueOf(mermaids))));
+        if (masochists > 0) player.sendMessage(msg().get("game.setup-masochists", MessageUtil.ph("count", String.valueOf(masochists))));
+        if (cupids > 0) player.sendMessage(msg().get("game.setup-cupids", MessageUtil.ph("count", String.valueOf(cupids))));
+        player.sendMessage(msg().get("game.setup-total", MessageUtil.ph("count", String.valueOf(total))));
+        player.sendMessage(msg().get("game.setup-day-dur", MessageUtil.ph("seconds", String.valueOf(dayDur))));
+        player.sendMessage(msg().get("game.setup-night-dur", MessageUtil.ph("seconds", String.valueOf(nightDur))));
     }
 
     public void sendWolfTeamInfo(Player player) {
-        player.sendMessage(plugin.prefix() + ChatColor.DARK_RED + "===== Wolf Team =====");
+        player.sendMessage(plugin.prefix() + msg().get("game.wolf-team-header"));
         boolean any = false;
         for (GamePlayer gp : players) {
             if (gp.getRole().isWerewolf() || gp.getRole().isTrickster()) {
                 any = true;
-                String status = gp.isAlive() ? ChatColor.GREEN + "Alive" : ChatColor.RED + "Dead";
-                player.sendMessage(ChatColor.RED + gp.getPlayer().getName() + ChatColor.GRAY + " - " + status);
+                String status = gp.isAlive() ? msg().get("game.wolf-team-alive") : msg().get("game.wolf-team-dead");
+                player.sendMessage(msg().get("game.wolf-team-line", MessageUtil.ph("player", gp.getPlayer().getName(), "status", status)));
             }
         }
         if (!any) {
-            player.sendMessage(ChatColor.GRAY + "No wolf team members.");
+            player.sendMessage(msg().get("game.wolf-team-none"));
         }
     }
 
@@ -1536,20 +1558,20 @@ public class Arena {
         String phaseName;
         if (phase == Phase.SHERIFF_ELECTION) {
             totalDuration = electionDuration;
-            phaseName = ChatColor.GOLD + "Election";
+            phaseName = msg().get("game.boss-bar-election");
         } else if (phase == Phase.DAY) {
             totalDuration = dayDuration;
-            phaseName = ChatColor.GOLD + "Day";
+            phaseName = msg().get("game.boss-bar-day");
         } else if (phase == Phase.NIGHT) {
             totalDuration = nightDuration;
-            phaseName = ChatColor.DARK_PURPLE + "Night";
+            phaseName = msg().get("game.boss-bar-night");
         } else {
             return;
         }
         if (totalDuration <= 0) return;
         double progress = Math.max(0.0, Math.min(1.0, (double) phaseTimer / (double) totalDuration));
         bossBar.setProgress(progress);
-        bossBar.setTitle(phaseName + ChatColor.GRAY + " - " + Math.max(0, phaseTimer) + "s");
+        bossBar.setTitle(phaseName + msg().get("game.boss-bar-suffix", MessageUtil.ph("timer", String.valueOf(Math.max(0, phaseTimer)))));
     }
 
     private void removeBossBar() {
@@ -1574,14 +1596,14 @@ public class Arena {
                     if (!p.isOnline()) continue;
                     String text;
                     if (phase == Phase.SHERIFF_ELECTION) {
-                        text = ChatColor.GOLD + "Sheriff Election" + ChatColor.GRAY + " | " + Math.max(0, phaseTimer) + "s";
+                        text = msg().get("game.action-bar-election", MessageUtil.ph("timer", String.valueOf(Math.max(0, phaseTimer))));
                     } else if (gp.isAlive()) {
-                        text = ChatColor.GOLD + "Role: " + ChatColor.WHITE + gp.getRole().getName() +
-                                ChatColor.GRAY + " | " + ChatColor.AQUA + (phase == Phase.DAY ? "Day" : "Night") +
-                                ChatColor.GRAY + " | " + (gp.isSheriff() ? ChatColor.GOLD + "Sheriff (2x votes)" : ChatColor.GREEN + "Alive");
+                        String phaseLabel = phase == Phase.DAY ? msg().raw("scoreboard.game.phase-day") : msg().raw("scoreboard.game.phase-night");
+                        String sheriffText = gp.isSheriff() ? msg().get("game.action-bar-sheriff") : msg().get("game.action-bar-alive-text");
+                        text = msg().get("game.action-bar-alive", MessageUtil.ph("role", gp.getRole().getName(), "phase", phaseLabel, "sheriff", sheriffText));
                     } else {
-                        text = ChatColor.RED + "You are dead - Spectating" +
-                                ChatColor.GRAY + " | " + ChatColor.AQUA + (phase == Phase.DAY ? "Day" : "Night");
+                        String phaseLabel = phase == Phase.DAY ? msg().raw("scoreboard.game.phase-day") : msg().raw("scoreboard.game.phase-night");
+                        text = msg().get("game.action-bar-dead", MessageUtil.ph("phase", phaseLabel));
                     }
                     p.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
                             net.md_5.bungee.api.chat.TextComponent.fromLegacyText(text));
@@ -1603,13 +1625,13 @@ public class Arena {
         NinjaRole ninjaRole = gp.asNinja();
         if (ninjaRole == null) return;
         if (ninjaRole.hasUsedAbilityTonight()) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used your ability tonight!");
+            player.sendMessage(plugin.prefix() + msg().get("game.ninja-already-used"));
             return;
         }
         ninjaRole.setSelectedAbility(ability);
         player.getInventory().setItem(getItemSlot("ninja-ability"), ItemBuilder.create(plugin, "ninja-ability"));
         String abilityName = ability.substring(0, 1).toUpperCase() + ability.substring(1);
-        player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You selected: " + ChatColor.WHITE + abilityName + ChatColor.DARK_PURPLE + "! Right-click your Ninja Orb to activate it.");
+        player.sendMessage(plugin.prefix() + msg().get("game.ninja-selected", MessageUtil.ph("ability", abilityName)));
     }
 
     public void ninjaExecuteAbility(Player player) {
@@ -1620,12 +1642,12 @@ public class Arena {
         String cooldownKey = player.getUniqueId() + ":ninja";
         if (isOnCooldown(cooldownKey, ninjaCooldown, player)) return;
         if (ninjaRole.hasUsedAbilityTonight()) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You have already used your ability tonight!");
+            player.sendMessage(plugin.prefix() + msg().get("game.ninja-already-used"));
             return;
         }
         String ability = ninjaRole.getSelectedAbility();
         if (ability == null) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "Use your Ninja Book to select an ability first!");
+            player.sendMessage(plugin.prefix() + msg().get("game.ninja-no-ability"));
             return;
         }
         setCooldown(cooldownKey);
@@ -1639,7 +1661,7 @@ public class Arena {
             case "vanish":
                 player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false));
                 particleTrailPlayers.add(player.getUniqueId());
-                player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You vanish into the shadows for 8 seconds!");
+                player.sendMessage(plugin.prefix() + msg().get("game.ninja-vanish"));
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -1649,7 +1671,7 @@ public class Arena {
                 break;
             case "sprint":
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, 4, false, false));
-                player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You feel a burst of speed for 8 seconds!");
+                player.sendMessage(plugin.prefix() + msg().get("game.ninja-sprint"));
                 break;
             case "decoy":
                 Location loc = player.getLocation();
@@ -1659,7 +1681,7 @@ public class Arena {
                 decoy.setCustomNameVisible(true);
                 decoy.setGravity(false);
                 decoy.setMarker(true);
-                player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You spawned a decoy for 8 seconds!");
+                player.sendMessage(plugin.prefix() + msg().get("game.ninja-decoy"));
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -1685,7 +1707,7 @@ public class Arena {
                 inv.setBoots(fakeBoots);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, durationTicks, 0, false, false));
                 particleTrailPlayers.add(player.getUniqueId());
-                player.sendMessage(plugin.prefix() + ChatColor.DARK_PURPLE + "You disguise as a wolf for 8 seconds! You look like a werewolf but won't appear on the wolf team list.");
+                player.sendMessage(plugin.prefix() + msg().get("game.ninja-disguise"));
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -1710,17 +1732,17 @@ public class Arena {
         MermaidRole mermaidRole = gp.asMermaid();
         if (mermaidRole == null) return;
         if (mermaidRole.hasSungTonight()) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "You have already sung tonight!");
+            player.sendMessage(plugin.prefix() + msg().get("game.mermaid-already-sung"));
             return;
         }
         mermaidRole.setSungTonight(true);
         mermaidFreezeUntil = System.currentTimeMillis() + (mermaidFreezeDuration * 1000L);
         player.getInventory().removeItem(ItemBuilder.create(plugin, "mermaid-shell"));
-        player.sendMessage(plugin.prefix() + ChatColor.AQUA + "You sing the Mermaid's song! The werewolves are frozen in place for " + mermaidFreezeDuration + " seconds!");
-        broadcast(ChatColor.AQUA + "A haunting melody echoes through the night... The werewolves are frozen in place!");
+        player.sendMessage(plugin.prefix() + msg().get("game.mermaid-sing-self", MessageUtil.ph("seconds", String.valueOf(mermaidFreezeDuration))));
+        broadcast(msg().get("game.mermaid-sing-broadcast"));
         for (GamePlayer wgp : players) {
             if (wgp.isAlive() && wgp.getRole().isWerewolf()) {
-                wgp.getPlayer().sendMessage(plugin.prefix() + ChatColor.AQUA + "The Mermaid's song has frozen you! You cannot move for " + mermaidFreezeDuration + " seconds!");
+                wgp.getPlayer().sendMessage(plugin.prefix() + msg().get("game.mermaid-frozen", MessageUtil.ph("seconds", String.valueOf(mermaidFreezeDuration))));
             }
         }
     }
@@ -1735,7 +1757,7 @@ public class Arena {
         long elapsed = (System.currentTimeMillis() - lastUsed) / 1000L;
         long remaining = cooldownSeconds - elapsed;
         if (remaining > 0) {
-            player.sendMessage(plugin.prefix() + ChatColor.RED + "Ability on cooldown! " + remaining + "s remaining.");
+            player.sendMessage(plugin.prefix() + msg().get("game.cooldown", MessageUtil.ph("seconds", String.valueOf(remaining))));
             return true;
         }
         return false;

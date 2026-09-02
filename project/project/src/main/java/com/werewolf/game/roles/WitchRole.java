@@ -2,7 +2,6 @@ package com.werewolf.game.roles;
 
 import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.game.Team;
-import com.werewolf.game.util.ColorUtil;
 import com.werewolf.game.util.ItemBuilder;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -16,15 +15,12 @@ public class WitchRole extends Role {
     private boolean healUsed = false;
 
     public WitchRole() {
-        super("Witch", Team.GOOD,
-                "You are a Witch! You have one bottle of poison and one bottle of heal. " +
-                        "The poison kills a player, the heal saves a player. Once used, they are gone forever. " +
-                        "Use them wisely during the night!");
+        super("witch", Team.GOOD);
     }
 
     @Override
     public void onNightStart(Player player) {
-        player.sendMessage(WerewolfPlugin.getInstance().prefix() + ColorUtil.color("&dNight falls! You may use your potions."));
+        player.sendMessage(WerewolfPlugin.getInstance().prefix() + WerewolfPlugin.getInstance().getMessageUtil().getRoleNightStart("witch"));
         if (!poisonUsed) {
             player.getInventory().addItem(ItemBuilder.create(WerewolfPlugin.getInstance(), "witch-poison"));
         }
@@ -35,7 +31,7 @@ public class WitchRole extends Role {
 
     @Override
     public void onDayStart(Player player) {
-        player.sendMessage(WerewolfPlugin.getInstance().prefix() + ColorUtil.color("&eDay breaks! Your potions cannot be used during the day."));
+        player.sendMessage(WerewolfPlugin.getInstance().prefix() + WerewolfPlugin.getInstance().getMessageUtil().getRoleDayStart("witch"));
         player.getInventory().removeItem(ItemBuilder.create(WerewolfPlugin.getInstance(), "witch-poison"));
         player.getInventory().removeItem(ItemBuilder.create(WerewolfPlugin.getInstance(), "witch-heal"));
     }

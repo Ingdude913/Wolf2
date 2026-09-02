@@ -10,7 +10,8 @@ import com.werewolf.game.gui.CupidGUI;
 import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.gui.MapSelectorGUI;
-import org.bukkit.ChatColor;
+import com.werewolf.game.util.MessageUtil;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -39,7 +40,7 @@ public class InventoryClickListener implements Listener {
         if (inv == null) return;
 
         String title = event.getView().getTitle();
-        if (SeerGUI.isSeerGUI(player, title)) {
+        if (SeerGUI.isSeerGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -55,7 +56,7 @@ public class InventoryClickListener implements Listener {
 
             arena.seerCheck(player, target);
             player.closeInventory();
-        } else if (NinjaGUI.isNinjaGUI(title)) {
+        } else if (NinjaGUI.isNinjaGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -71,7 +72,7 @@ public class InventoryClickListener implements Listener {
 
             arena.ninjaSelectAbility(player, ability);
             player.closeInventory();
-        } else if (CupidGUI.isCupidGUI(title)) {
+        } else if (CupidGUI.isCupidGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -86,7 +87,7 @@ public class InventoryClickListener implements Listener {
             if (target == null) return;
 
             arena.cupidSelectSpouse(player, target);
-        } else if (RoleSelectorGUI.isRoleSelectorGUI(title)) {
+        } else if (RoleSelectorGUI.isRoleSelectorGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -101,21 +102,21 @@ public class InventoryClickListener implements Listener {
             if (roleKey.equals("sheriff-toggle")) {
                 boolean newState = !arena.isSheriffEnabled();
                 arena.setSheriffEnabled(newState);
-                player.sendMessage(plugin.prefix() + ChatColor.GOLD + "Sheriff Election: " + (newState ? ChatColor.GREEN + "ENABLED" : ChatColor.RED + "DISABLED"));
-                RoleSelectorGUI.update(player, arena.getRoleSelection(), newState);
+                player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("gui-items.sheriff-toggle." + (newState ? "enabled" : "disabled")));
+                RoleSelectorGUI.update(plugin, player, arena.getRoleSelection(), newState);
                 return;
             }
 
             if (event.getClick() == ClickType.LEFT) {
                 arena.adjustRoleSelection(roleKey, 1);
-                player.sendMessage(plugin.prefix() + ChatColor.GREEN + "Added one " + roleKey + "! Total: " + arena.getRoleSelection().getOrDefault(roleKey, 0));
-                RoleSelectorGUI.update(player, arena.getRoleSelection(), arena.isSheriffEnabled());
+                player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.role-added", MessageUtil.ph("role", roleKey, "count", String.valueOf(arena.getRoleSelection().getOrDefault(roleKey, 0)))));
+                RoleSelectorGUI.update(plugin, player, arena.getRoleSelection(), arena.isSheriffEnabled());
             } else if (event.getClick() == ClickType.RIGHT) {
                 arena.adjustRoleSelection(roleKey, -1);
-                player.sendMessage(plugin.prefix() + ChatColor.RED + "Removed one " + roleKey + "! Total: " + arena.getRoleSelection().getOrDefault(roleKey, 0));
-                RoleSelectorGUI.update(player, arena.getRoleSelection(), arena.isSheriffEnabled());
+                player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.role-removed", MessageUtil.ph("role", roleKey, "count", String.valueOf(arena.getRoleSelection().getOrDefault(roleKey, 0)))));
+                RoleSelectorGUI.update(plugin, player, arena.getRoleSelection(), arena.isSheriffEnabled());
             }
-        } else if (MapSelectorGUI.isMapSelectorGUI(title)) {
+        } else if (MapSelectorGUI.isMapSelectorGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -129,7 +130,7 @@ public class InventoryClickListener implements Listener {
 
             arena.voteForMap(player, worldName);
             MapSelectorGUI.open(plugin, arena, player);
-        } else if (SheriffGUI.isSheriffGUI(title)) {
+        } else if (SheriffGUI.isSheriffGUI(plugin, title)) {
             event.setCancelled(true);
 
             if (arena == null) return;
@@ -165,17 +166,17 @@ public class InventoryClickListener implements Listener {
         if (!(event.getPlayer() instanceof Player)) return;
         Player player = (Player) event.getPlayer();
         String title = event.getView().getTitle();
-        if (SeerGUI.isSeerGUI(player, title)) {
+        if (SeerGUI.isSeerGUI(plugin, title)) {
             SeerGUI.clearMapping(player);
-        } else if (NinjaGUI.isNinjaGUI(title)) {
+        } else if (NinjaGUI.isNinjaGUI(plugin, title)) {
             NinjaGUI.clearMapping(player);
-        } else if (SheriffGUI.isSheriffGUI(title)) {
+        } else if (SheriffGUI.isSheriffGUI(plugin, title)) {
             SheriffGUI.clearMapping(player);
-        } else if (CupidGUI.isCupidGUI(title)) {
+        } else if (CupidGUI.isCupidGUI(plugin, title)) {
             CupidGUI.clearMapping(player);
-        } else if (RoleSelectorGUI.isRoleSelectorGUI(title)) {
+        } else if (RoleSelectorGUI.isRoleSelectorGUI(plugin, title)) {
             RoleSelectorGUI.clearMapping(player);
-        } else if (MapSelectorGUI.isMapSelectorGUI(title)) {
+        } else if (MapSelectorGUI.isMapSelectorGUI(plugin, title)) {
             MapSelectorGUI.clearMapping(player);
         }
     }

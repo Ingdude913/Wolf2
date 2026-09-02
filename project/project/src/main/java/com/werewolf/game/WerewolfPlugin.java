@@ -5,6 +5,7 @@ import com.werewolf.game.arena.ArenaManager;
 import com.werewolf.game.commands.WerewolfCommand;
 import com.werewolf.game.game.GameManager;
 import com.werewolf.game.listeners.*;
+import com.werewolf.game.util.MessageUtil;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class WerewolfPlugin extends JavaPlugin {
@@ -13,6 +14,7 @@ public class WerewolfPlugin extends JavaPlugin {
 
     private ArenaManager arenaManager;
     private GameManager gameManager;
+    private MessageUtil messageUtil;
 
     @Override
     public void onEnable() {
@@ -21,6 +23,7 @@ public class WerewolfPlugin extends JavaPlugin {
 
         this.arenaManager = new ArenaManager(this);
         this.gameManager = new GameManager(this);
+        this.messageUtil = new MessageUtil(this);
 
         arenaManager.getWorldManager().getWorldsFolder();
 
@@ -41,7 +44,7 @@ public class WerewolfPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerOffHandListener(this), this);
 
-        getLogger().info("Werewolf plugin enabled!");
+        getLogger().info(messageUtil.get("plugin.enabled"));
     }
 
     @Override
@@ -49,7 +52,7 @@ public class WerewolfPlugin extends JavaPlugin {
         if (arenaManager != null && arenaManager.getGame() != null) {
             arenaManager.getGame().forceStop();
         }
-        getLogger().info("Werewolf plugin disabled!");
+        getLogger().info(messageUtil.get("plugin.disabled"));
     }
 
     public static WerewolfPlugin getInstance() {
@@ -66,5 +69,9 @@ public class WerewolfPlugin extends JavaPlugin {
 
     public String prefix() {
         return com.werewolf.game.util.ColorUtil.color(getConfig().getString("prefix", "&8[&cWerewolf&8] &r"));
+    }
+
+    public MessageUtil getMessageUtil() {
+        return messageUtil;
     }
 }

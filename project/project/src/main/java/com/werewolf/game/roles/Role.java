@@ -1,5 +1,6 @@
 package com.werewolf.game.roles;
 
+import com.werewolf.game.WerewolfPlugin;
 import com.werewolf.game.game.Team;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -8,14 +9,16 @@ import java.util.List;
 
 public abstract class Role {
 
-    protected final String name;
+    protected final String roleKey;
     protected final Team team;
-    protected final String description;
 
-    protected Role(String name, Team team, String description) {
-        this.name = name;
+    protected Role(String roleKey, Team team) {
+        this.roleKey = roleKey;
         this.team = team;
-        this.description = description;
+    }
+
+    public String getRoleKey() {
+        return roleKey;
     }
 
     public abstract void onNightStart(Player player);
@@ -25,7 +28,7 @@ public abstract class Role {
     public abstract List<ItemStack> getRoleItems();
 
     public String getName() {
-        return name;
+        return WerewolfPlugin.getInstance().getMessageUtil().getRoleName(roleKey);
     }
 
     public Team getTeam() {
@@ -33,7 +36,7 @@ public abstract class Role {
     }
 
     public String getDescription() {
-        return description;
+        return WerewolfPlugin.getInstance().getMessageUtil().getRoleDescription(roleKey);
     }
 
     public boolean isWerewolf() {
