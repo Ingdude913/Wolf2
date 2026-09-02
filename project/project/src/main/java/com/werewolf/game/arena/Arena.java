@@ -472,8 +472,14 @@ public class Arena {
         }
         voterGp.setVoted(true);
         voterGp.setVotedFor(target);
-        sheriffElectionVotes.merge(target.getUniqueId(), 1, Integer::sum);
-        voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
+        int voteWeight = voterGp.isSheriff() ? 2 : 1;
+        sheriffElectionVotes.merge(target.getUniqueId(), voteWeight, Integer::sum);
+        if (voterGp.isSheriff()) {
+            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
+            voter.sendMessage(plugin.prefix() + msg().get("game.vote-cast-sheriff", MessageUtil.ph("target", target.getName())));
+        } else {
+            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
+        }
         broadcast(msg().get("game.sheriff-vote-broadcast", MessageUtil.ph("player", voter.getName())));
     }
 
@@ -487,7 +493,8 @@ public class Arena {
         }
         Player target = voterGp.getVotedFor();
         if (target != null) {
-            sheriffElectionVotes.merge(target.getUniqueId(), -1, Integer::sum);
+            int voteWeight = voterGp.isSheriff() ? 2 : 1;
+            sheriffElectionVotes.merge(target.getUniqueId(), -voteWeight, Integer::sum);
             if (sheriffElectionVotes.getOrDefault(target.getUniqueId(), 0) <= 0) {
                 sheriffElectionVotes.remove(target.getUniqueId());
             }
@@ -773,16 +780,15 @@ public class Arena {
             broadcast(msg().get("game.no-votes"));
             return;
         }
-        UUID mostVoted = null;
+        List<UUID> topVoted = new ArrayList<>();
         int maxVotes = 0;
-        boolean tie = false;
         for (Map.Entry<UUID, Integer> entry : voteCounts.entrySet()) {
             if (entry.getValue() > maxVotes) {
                 maxVotes = entry.getValue();
-                mostVoted = entry.getKey();
-                tie = false;
+                topVoted.clear();
+                topVoted.add(entry.getKey());
             } else if (entry.getValue() == maxVotes) {
-                tie = true;
+                topVoted.add(entry.getKey());
             }
         }
         voteCounts.clear();
@@ -790,10 +796,11 @@ public class Arena {
             gp.resetVote();
         }
         scoreboardHelper.updateVotes(voteCounts);
-        if (tie || mostVoted == null) {
+        if (topVoted.isEmpty() || maxVotes == 0) {
             broadcast(msg().get("game.vote-tied"));
             return;
         }
+        UUID mostVoted = topVoted.size() == 1 ? topVoted.get(0) : topVoted.get(new Random().nextInt(topVoted.size()));
         Player eliminated = Bukkit.getPlayer(mostVoted);
         if (eliminated == null) return;
         GamePlayer gp = getGamePlayer(eliminated);
