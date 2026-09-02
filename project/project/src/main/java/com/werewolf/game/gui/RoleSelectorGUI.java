@@ -34,7 +34,7 @@ public class RoleSelectorGUI {
 
     public static void open(Player player, Map<String, Integer> currentSelection, boolean sheriffEnabled) {
         sheriffEnabledMap.put(player, sheriffEnabled);
-        Inventory inv = Bukkit.createInventory(player, 27, GUI_TITLE);
+        Inventory inv = Bukkit.createInventory(player, 36, GUI_TITLE);
         populateInventory(inv, player, currentSelection);
         player.openInventory(inv);
     }
@@ -76,8 +76,8 @@ public class RoleSelectorGUI {
             sheriffMeta.setLore(lore);
             sheriffToggle.setItemMeta(sheriffMeta);
         }
-        inv.setItem(22, sheriffToggle);
-        slotMap.put(22, "sheriff-toggle");
+        inv.setItem(31, sheriffToggle);
+        slotMap.put(31, "sheriff-toggle");
 
         guiMappings.put(player, slotMap);
     }

@@ -6,6 +6,7 @@ import com.werewolf.game.game.GamePlayer;
 import com.werewolf.game.game.Phase;
 import com.werewolf.game.gui.NinjaGUI;
 import com.werewolf.game.gui.RoleSelectorGUI;
+import com.werewolf.game.gui.CupidGUI;
 import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import com.werewolf.game.util.ItemBuilder;
@@ -154,7 +155,7 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "cupid-bow")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.NIGHT) {
-                    player.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "Right-click a player to select them as a spouse.");
+                    CupidGUI.open(plugin, arena, player);
                 }
                 return;
             }

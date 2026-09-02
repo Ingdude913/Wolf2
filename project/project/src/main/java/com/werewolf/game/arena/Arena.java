@@ -891,6 +891,8 @@ public class Arena {
         if (cupidRole.getSpouse1() == null) {
             cupidRole.setSpouse1(target);
             cupid.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You selected " + target.getName() + " as the first spouse. Select one more player to complete the pair.");
+            cupid.closeInventory();
+            com.werewolf.game.gui.CupidGUI.open(plugin, this, cupid);
             return;
         }
         if (cupidRole.getSpouse2() != null) {
@@ -907,6 +909,7 @@ public class Arena {
         spouses.put(first.getUniqueId(), target.getUniqueId());
         spouses.put(target.getUniqueId(), first.getUniqueId());
         cupid.getInventory().removeItem(ItemBuilder.create(plugin, "cupid-bow"));
+        cupid.closeInventory();
         broadcast(ChatColor.LIGHT_PURPLE + "===== CUPID'S ARROW =====");
         broadcast(ChatColor.LIGHT_PURPLE + first.getName() + " and " + target.getName() + " are now spouses! They must stay alive together to win!");
         first.sendMessage(plugin.prefix() + ChatColor.LIGHT_PURPLE + "You are now spouses with " + target.getName() + "! If one of you dies, the other dies too. Stay alive together to win!");

@@ -6,6 +6,7 @@ import com.werewolf.game.game.GamePlayer;
 import com.werewolf.game.game.Phase;
 import com.werewolf.game.gui.NinjaGUI;
 import com.werewolf.game.gui.RoleSelectorGUI;
+import com.werewolf.game.gui.CupidGUI;
 import com.werewolf.game.gui.SeerGUI;
 import com.werewolf.game.gui.SheriffGUI;
 import org.bukkit.ChatColor;
@@ -69,6 +70,21 @@ public class InventoryClickListener implements Listener {
 
             arena.ninjaSelectAbility(player, ability);
             player.closeInventory();
+        } else if (CupidGUI.isCupidGUI(title)) {
+            event.setCancelled(true);
+
+            if (arena == null) return;
+
+            GamePlayer cupidGp = arena.getGamePlayer(player);
+            if (cupidGp == null || !cupidGp.isAlive()) return;
+
+            int slot = event.getRawSlot();
+            if (slot < 0 || slot >= inv.getSize()) return;
+
+            Player target = CupidGUI.getPlayerAtSlot(player, slot);
+            if (target == null) return;
+
+            arena.cupidSelectSpouse(player, target);
         } else if (RoleSelectorGUI.isRoleSelectorGUI(title)) {
             event.setCancelled(true);
 
@@ -140,6 +156,8 @@ public class InventoryClickListener implements Listener {
             NinjaGUI.clearMapping(player);
         } else if (SheriffGUI.isSheriffGUI(title)) {
             SheriffGUI.clearMapping(player);
+        } else if (CupidGUI.isCupidGUI(title)) {
+            CupidGUI.clearMapping(player);
         } else if (RoleSelectorGUI.isRoleSelectorGUI(title)) {
             RoleSelectorGUI.clearMapping(player);
         }
