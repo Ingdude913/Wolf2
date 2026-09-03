@@ -251,6 +251,9 @@ game:
   game-over-header: "&6===== GAME OVER ====="
   game-over-reason: "&e{reason}"
   game-over-winner: "&6The {winning_team} wins!"
+  title-victory: "&6&lVictory"
+  title-defeat: "&c&lYou lost"
+  title-winner-subtitle: "&7The {winning_team} team wins!"
   role-reveal-header: "&6===== ROLE REVEAL ====="
   role-reveal-line: "&7{player} was the {role}"
   your-role-was: "&7You were the {role}."
@@ -310,11 +313,12 @@ win:
   spouses-all-gone: "All other teams have been eliminated and the spouses are both alive!"
   spouses-no-bad: "All werewolves have been eliminated and the spouses are both alive!"
   spouses-no-good: "All villagers have been eliminated and the spouses are both alive!"
-  spouses-team: "Spouses"
+  spouses-team: "Spouse"
   good: "All werewolves have been eliminated!"
-  good-team: "Good team"
+  good-team: "Human"
   bad: "All villagers have been eliminated!"
-  bad-team: "Bad team"
+  bad-team: "Wolf"
+  masochist-team: "Masochist"
 
 # --- Admin/debug messages ---
 admin:

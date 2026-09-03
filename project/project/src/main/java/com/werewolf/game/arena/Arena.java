@@ -807,7 +807,7 @@ public class Arena {
         if (gp.getRole().isMasochist() && !debugMode) {
             broadcast(msg().get("game.masochist-header"));
             broadcast(msg().get("game.masochist-win", MessageUtil.ph("player", eliminated.getName())));
-            endGame(msg().get("win.spouses-team"), eliminated.getName() + " (Masochist) " + msg().raw("game.masochist-win", MessageUtil.ph("player", eliminated.getName())));
+            endGame(msg().get("win.masochist-team"), eliminated.getName() + " (Masochist) " + msg().raw("game.masochist-win", MessageUtil.ph("player", eliminated.getName())));
             return;
         }
         eliminatePlayer(gp, "voted out by the village");
@@ -1288,6 +1288,30 @@ public class Arena {
         broadcast(msg().get("game.game-over-header"));
         broadcast(msg().get("game.game-over-reason", MessageUtil.ph("reason", reason)));
         broadcast(msg().get("game.game-over-winner", MessageUtil.ph("winning_team", winningTeam)));
+
+        String victoryTitle = msg().get("game.title-victory");
+        String defeatTitle = msg().get("game.title-defeat");
+        String winnerSubtitle = msg().get("game.title-winner-subtitle", MessageUtil.ph("winning_team", winningTeam));
+
+        for (GamePlayer gp : players) {
+            Player p = gp.getPlayer();
+            boolean isWinner = false;
+            if (winningTeam.equals(msg().get("win.bad-team"))) {
+                isWinner = gp.getRole().isBad();
+            } else if (winningTeam.equals(msg().get("win.good-team"))) {
+                isWinner = gp.getRole().isGood();
+            } else if (winningTeam.equals(msg().get("win.spouses-team"))) {
+                UUID partnerId = spouses.get(p.getUniqueId());
+                isWinner = partnerId != null;
+            } else if (winningTeam.equals(msg().get("win.masochist-team"))) {
+                isWinner = gp.getRole().isMasochist();
+            }
+            if (isWinner) {
+                p.sendTitle(victoryTitle, winnerSubtitle, 10, 60, 10);
+            } else {
+                p.sendTitle(defeatTitle, winnerSubtitle, 10, 60, 10);
+            }
+        }
 
         for (GamePlayer gp : players) {
             Player p = gp.getPlayer();
