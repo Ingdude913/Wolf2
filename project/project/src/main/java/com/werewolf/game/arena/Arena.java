@@ -417,23 +417,23 @@ public class Arena {
     }
 
     private void endSheriffElection() {
-        UUID electedId = null;
+        List<UUID> topVoted = new ArrayList<>();
         int maxVotes = 0;
-        boolean tie = false;
         for (Map.Entry<UUID, Integer> entry : sheriffElectionVotes.entrySet()) {
             if (entry.getValue() > maxVotes) {
                 maxVotes = entry.getValue();
-                electedId = entry.getKey();
-                tie = false;
+                topVoted.clear();
+                topVoted.add(entry.getKey());
             } else if (entry.getValue() == maxVotes) {
-                tie = true;
+                topVoted.add(entry.getKey());
             }
         }
         sheriffElectionVotes.clear();
 
-        if (tie || electedId == null || maxVotes == 0) {
+        if (topVoted.isEmpty() || maxVotes == 0) {
             broadcast(msg().get("game.sheriff-tie"));
         } else {
+            UUID electedId = topVoted.size() == 1 ? topVoted.get(0) : topVoted.get(new Random().nextInt(topVoted.size()));
             Player sheriff = Bukkit.getPlayer(electedId);
             if (sheriff != null) {
                 GamePlayer sheriffGp = getGamePlayer(sheriff);
@@ -472,14 +472,8 @@ public class Arena {
         }
         voterGp.setVoted(true);
         voterGp.setVotedFor(target);
-        int voteWeight = voterGp.isSheriff() ? 2 : 1;
-        sheriffElectionVotes.merge(target.getUniqueId(), voteWeight, Integer::sum);
-        if (voterGp.isSheriff()) {
-            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
-            voter.sendMessage(plugin.prefix() + msg().get("game.vote-cast-sheriff", MessageUtil.ph("target", target.getName())));
-        } else {
-            voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
-        }
+        sheriffElectionVotes.merge(target.getUniqueId(), 1, Integer::sum);
+        voter.sendMessage(plugin.prefix() + msg().get("game.sheriff-vote-cast", MessageUtil.ph("target", target.getName())));
         broadcast(msg().get("game.sheriff-vote-broadcast", MessageUtil.ph("player", voter.getName())));
     }
 
@@ -493,8 +487,7 @@ public class Arena {
         }
         Player target = voterGp.getVotedFor();
         if (target != null) {
-            int voteWeight = voterGp.isSheriff() ? 2 : 1;
-            sheriffElectionVotes.merge(target.getUniqueId(), -voteWeight, Integer::sum);
+            sheriffElectionVotes.merge(target.getUniqueId(), -1, Integer::sum);
             if (sheriffElectionVotes.getOrDefault(target.getUniqueId(), 0) <= 0) {
                 sheriffElectionVotes.remove(target.getUniqueId());
             }
