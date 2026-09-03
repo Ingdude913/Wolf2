@@ -11,7 +11,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,28 +34,21 @@ public class MapSelectorGUI {
         Inventory inv = Bukkit.createInventory(player, size, title);
         Map<Integer, String> slotMap = new HashMap<>();
 
-        Map<String, Integer> voteCounts = new HashMap<>();
-        for (String world : arena.getMapVotes().values()) {
-            voteCounts.merge(world, 1, Integer::sum);
-        }
-
-        String playerVote = arena.getPlayerMapVote(player);
+        String currentSelection = arena.getSelectedMapName();
 
         int slot = 0;
         for (String world : worlds) {
             ItemStack item = new ItemStack(Material.GRASS_BLOCK);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                boolean isVoted = world.equals(playerVote);
-                if (isVoted) {
+                boolean isSelected = world.equals(currentSelection);
+                if (isSelected) {
                     meta.setDisplayName(msg.get("gui-items.map-world-voted", MessageUtil.ph("world", world)));
                 } else {
                     meta.setDisplayName(msg.get("gui-items.map-world", MessageUtil.ph("world", world)));
                 }
-                List<String> lore = new ArrayList<>();
-                int votes = voteCounts.getOrDefault(world, 0);
-                lore.add(msg.get("gui-items.map-votes", MessageUtil.ph("votes", String.valueOf(votes))));
-                if (isVoted) {
+                java.util.List<String> lore = new java.util.ArrayList<>();
+                if (isSelected) {
                     lore.add(msg.get("gui-items.map-voted-yes"));
                 } else {
                     lore.add(msg.get("gui-items.map-voted-no"));
@@ -74,7 +66,7 @@ public class MapSelectorGUI {
             ItemMeta meta = empty.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName(msg.get("gui-items.map-no-maps"));
-                List<String> lore = new ArrayList<>();
+                List<String> lore = new java.util.ArrayList<>();
                 lore.add(msg.get("gui-items.map-no-maps-lore-1"));
                 lore.add(msg.get("gui-items.map-no-maps-lore-2"));
                 meta.setLore(lore);

@@ -72,7 +72,7 @@ public class Arena {
 
     private final Map<String, Integer> roleSelection = new HashMap<>();
     private final Map<UUID, Integer> fakeVoteCounts = new HashMap<>();
-    private final Map<UUID, String> mapVotes = new HashMap<>();
+    private String selectedMap = null;
 
     private BossBar bossBar = null;
     private int actionBarTaskId = -1;
@@ -266,7 +266,7 @@ public class Arena {
         particleTrailPlayers.remove(player.getUniqueId());
         voteCounts.remove(player.getUniqueId());
         hunterTargets.remove(player.getUniqueId());
-        mapVotes.remove(player.getUniqueId());
+
 
         player.getInventory().clear();
         player.setGameMode(GameMode.SURVIVAL);
@@ -639,30 +639,15 @@ public class Arena {
     }
 
     private String getSelectedMap() {
-        Map<String, Integer> counts = new HashMap<>();
-        for (String world : mapVotes.values()) {
-            counts.merge(world, 1, Integer::sum);
+        if (selectedMap != null) return selectedMap;
+        List<String> worlds = plugin.getArenaManager().getAvailableWorlds();
+        if (!worlds.isEmpty()) {
+            return worlds.get(new Random().nextInt(worlds.size()));
         }
-        String winner = null;
-        int maxVotes = 0;
-        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-            if (entry.getValue() > maxVotes) {
-                maxVotes = entry.getValue();
-                winner = entry.getKey();
-            }
-        }
-        if (winner == null) {
-            List<String> worlds = plugin.getArenaManager().getAvailableWorlds();
-            if (!worlds.isEmpty()) {
-                winner = worlds.get(new Random().nextInt(worlds.size()));
-            }
-        }
-        return winner;
+        return null;
     }
 
-    public void voteForMap(Player player, String worldName) {
-        GamePlayer gp = getGamePlayer(player);
-        if (gp == null || !gp.isAlive()) return;
+    public void selectMap(Player player, String worldName) {
         if (phase != Phase.LOBBY) {
             player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-lobby"));
             return;
@@ -672,17 +657,12 @@ public class Arena {
             player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-available"));
             return;
         }
-        mapVotes.put(player.getUniqueId(), worldName);
-        player.sendMessage(plugin.prefix() + msg().get("game.map-vote-cast", MessageUtil.ph("world", worldName)));
-        broadcast(msg().get("game.map-vote-broadcast", MessageUtil.ph("player", player.getName(), "world", worldName)));
+        selectedMap = worldName;
+        broadcast(msg().get("game.map-selected-broadcast", MessageUtil.ph("world", worldName)));
     }
 
-    public String getPlayerMapVote(Player player) {
-        return mapVotes.get(player.getUniqueId());
-    }
-
-    public Map<UUID, String> getMapVotes() {
-        return mapVotes;
+    public String getSelectedMapName() {
+        return selectedMap;
     }
 
     public void openMapSelector(Player player) {
@@ -1311,7 +1291,7 @@ public class Arena {
         abilityCooldowns.clear();
         roleSelection.clear();
         fakeVoteCounts.clear();
-        mapVotes.clear();
+        selectedMap = null;
         sheriffId = null;
         mermaidFreezeUntil = 0;
         spouses.clear();
@@ -1364,7 +1344,7 @@ public class Arena {
         abilityCooldowns.clear();
         roleSelection.clear();
         fakeVoteCounts.clear();
-        mapVotes.clear();
+        selectedMap = null;
         sheriffId = null;
         mermaidFreezeUntil = 0;
         spouses.clear();

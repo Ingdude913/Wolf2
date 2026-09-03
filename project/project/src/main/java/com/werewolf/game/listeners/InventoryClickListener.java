@@ -127,7 +127,7 @@ public class InventoryClickListener implements Listener {
             String worldName = MapSelectorGUI.getWorldAtSlot(player, slot);
             if (worldName == null) return;
 
-            arena.voteForMap(player, worldName);
+            arena.selectMap(player, worldName);
             MapSelectorGUI.open(plugin, arena, player);
         } else if (SheriffGUI.isSheriffGUI(plugin, title)) {
             event.setCancelled(true);
