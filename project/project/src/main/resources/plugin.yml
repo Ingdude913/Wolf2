@@ -16,3 +16,6 @@ permissions:
   werewolf.play:
     description: Allows joining arenas and playing
     default: true
+  werewolf.settings:
+    description: Allows access to the role selector and map selector in the lobby
+    default: op

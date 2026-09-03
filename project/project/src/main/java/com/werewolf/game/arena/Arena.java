@@ -225,8 +225,10 @@ public class Arena {
             player.setHealth(20);
             player.setFoodLevel(20);
 
-            player.getInventory().setItem(getItemSlot("role-selector"), ItemBuilder.create(plugin, "role-selector"));
-            player.getInventory().setItem(getItemSlot("map-selector"), ItemBuilder.create(plugin, "map-selector"));
+            if (player.hasPermission("werewolf.settings")) {
+                player.getInventory().setItem(getItemSlot("role-selector"), ItemBuilder.create(plugin, "role-selector"));
+                player.getInventory().setItem(getItemSlot("map-selector"), ItemBuilder.create(plugin, "map-selector"));
+            }
 
             if (bossBar != null) {
                 bossBar.addPlayer(player);
@@ -507,6 +509,7 @@ public class Arena {
             return;
         }
         roleSelection.put(roleKey, newValue);
+        plugin.getArenaManager().saveGameSettings(this);
     }
 
     public void openRoleSelector(Player player) {
@@ -519,6 +522,7 @@ public class Arena {
 
     public void setSheriffEnabled(boolean enabled) {
         this.sheriffEnabled = enabled;
+        plugin.getArenaManager().saveGameSettings(this);
     }
 
     private void assignRoles() {
@@ -658,11 +662,33 @@ public class Arena {
             return;
         }
         selectedMap = worldName;
+        plugin.getArenaManager().saveGameSettings(this);
         broadcast(msg().get("game.map-selected-broadcast", MessageUtil.ph("world", worldName)));
     }
 
     public String getSelectedMapName() {
         return selectedMap;
+    }
+
+    public void setSelectedMap(String map) {
+        this.selectedMap = map;
+    }
+
+    public void selectRandomMap(Player player) {
+        if (phase != Phase.LOBBY) {
+            player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-lobby"));
+            return;
+        }
+        List<String> available = plugin.getArenaManager().getAvailableWorlds();
+        if (available.isEmpty()) {
+            player.sendMessage(plugin.prefix() + msg().get("game.map-vote-not-available"));
+            return;
+        }
+        selectedMap = null;
+        String random = getSelectedMap();
+        selectedMap = random;
+        plugin.getArenaManager().saveGameSettings(this);
+        broadcast(msg().get("game.map-selected-broadcast", MessageUtil.ph("world", random)));
     }
 
     public void openMapSelector(Player player) {

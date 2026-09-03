@@ -152,11 +152,43 @@ public class ArenaManager {
         if (spawn != null) {
             game.setSpawnLocation(spawn);
         }
+        loadGameSettings(game);
         plugin.getLogger().info("Restored game arena in world '" + worldName + "'.");
     }
 
     public void saveGame() {
         saveGameFile();
+    }
+
+    public void saveGameSettings(Arena arena) {
+        if (arena == null) return;
+        gameConfig.set("settings.sheriff-enabled", arena.isSheriffEnabled());
+        gameConfig.set("settings.selected-map", arena.getSelectedMapName());
+        Map<String, Integer> roleSelection = arena.getRoleSelection();
+        for (Map.Entry<String, Integer> entry : roleSelection.entrySet()) {
+            gameConfig.set("settings.roles." + entry.getKey(), entry.getValue());
+        }
+        saveGameFile();
+    }
+
+    public void loadGameSettings(Arena arena) {
+        if (arena == null) return;
+        ConfigurationSection settings = gameConfig.getConfigurationSection("settings");
+        if (settings == null) return;
+        arena.setSheriffEnabled(settings.getBoolean("sheriff-enabled", true));
+        String map = settings.getString("selected-map");
+        if (map != null) {
+            arena.setSelectedMap(map);
+        }
+        ConfigurationSection roles = settings.getConfigurationSection("roles");
+        if (roles != null) {
+            for (String roleKey : roles.getKeys(false)) {
+                int count = roles.getInt(roleKey);
+                if (count > 0) {
+                    arena.getRoleSelection().put(roleKey, count);
+                }
+            }
+        }
     }
 
     private void saveGameFile() {
@@ -176,6 +208,7 @@ public class ArenaManager {
         if (spawn != null) {
             game.setSpawnLocation(spawn);
         }
+        loadGameSettings(game);
         gameConfig.set("active-game-world", worldName);
         saveGameFile();
         return game;

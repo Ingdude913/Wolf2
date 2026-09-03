@@ -18,6 +18,7 @@ import java.util.Map;
 public class MapSelectorGUI {
 
     private static final Map<Player, Map<Integer, String>> guiMappings = new HashMap<>();
+    private static final String RANDOM_MAP_KEY = "__random__";
 
     public static String getTitle(WerewolfPlugin plugin) {
         return plugin.getMessageUtil().get("gui.map-selector-title");
@@ -26,7 +27,8 @@ public class MapSelectorGUI {
     public static void open(WerewolfPlugin plugin, Arena arena, Player player) {
         MessageUtil msg = plugin.getMessageUtil();
         List<String> worlds = plugin.getArenaManager().getAvailableWorlds();
-        int size = ((worlds.size() / 9) + 1) * 9;
+        int mapCount = worlds.size() + 1;
+        int size = ((mapCount / 9) + 1) * 9;
         if (size < 9) size = 9;
         if (size > 54) size = 54;
 
@@ -61,6 +63,18 @@ public class MapSelectorGUI {
             slot++;
         }
 
+        ItemStack randomItem = new ItemStack(Material.COMPASS);
+        ItemMeta randomMeta = randomItem.getItemMeta();
+        if (randomMeta != null) {
+            randomMeta.setDisplayName(msg.get("gui-items.map-random"));
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add(msg.get("gui-items.map-random-lore"));
+            randomMeta.setLore(lore);
+            randomItem.setItemMeta(randomMeta);
+        }
+        inv.setItem(slot, randomItem);
+        slotMap.put(slot, RANDOM_MAP_KEY);
+
         if (worlds.isEmpty()) {
             ItemStack empty = new ItemStack(Material.BARRIER);
             ItemMeta meta = empty.getItemMeta();
@@ -83,6 +97,11 @@ public class MapSelectorGUI {
         Map<Integer, String> map = guiMappings.get(player);
         if (map == null) return null;
         return map.get(slot);
+    }
+
+    public static boolean isRandomMapSlot(Player player, int slot) {
+        String value = getWorldAtSlot(player, slot);
+        return RANDOM_MAP_KEY.equals(value);
     }
 
     public static void clearMapping(Player player) {

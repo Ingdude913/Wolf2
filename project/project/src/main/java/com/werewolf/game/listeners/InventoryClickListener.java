@@ -124,6 +124,12 @@ public class InventoryClickListener implements Listener {
             int slot = event.getRawSlot();
             if (slot < 0 || slot >= inv.getSize()) return;
 
+            if (MapSelectorGUI.isRandomMapSlot(player, slot)) {
+                arena.selectRandomMap(player);
+                MapSelectorGUI.open(plugin, arena, player);
+                return;
+            }
+
             String worldName = MapSelectorGUI.getWorldAtSlot(player, slot);
             if (worldName == null) return;
 

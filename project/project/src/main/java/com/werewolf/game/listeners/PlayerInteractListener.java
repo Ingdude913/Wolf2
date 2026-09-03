@@ -40,6 +40,10 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "role-selector")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.LOBBY) {
+                    if (!player.hasPermission("werewolf.settings")) {
+                        player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.no-permission-settings"));
+                        return;
+                    }
                     arena.openRoleSelector(player);
                 }
                 return;
@@ -48,6 +52,10 @@ public class PlayerInteractListener implements Listener {
             if (ItemBuilder.isItemKey(plugin, event.getItem(), "map-selector")) {
                 event.setCancelled(true);
                 if (arena.getPhase() == Phase.LOBBY) {
+                    if (!player.hasPermission("werewolf.settings")) {
+                        player.sendMessage(plugin.prefix() + plugin.getMessageUtil().get("game.no-permission-settings"));
+                        return;
+                    }
                     arena.openMapSelector(player);
                 }
                 return;
